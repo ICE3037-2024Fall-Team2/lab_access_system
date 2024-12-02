@@ -1,0 +1,58 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame
+)
+from PyQt5.QtGui import QFont
+from aws_connect import connect_to_rds 
+from custom_button import CustomButton2
+
+class UnlockWindow(QMainWindow):
+    def __init__(self, lab_id, lab_name, user_id):
+        super().__init__()
+        self.setWindowTitle("Unlock")
+        self.setGeometry(100, 100, 800, 600)
+
+        self.lab_id = lab_id 
+        self.lab_name = lab_name
+        self.user_id = user_id
+
+        # Main Widget
+        self.main_widget = QWidget(self)
+        self.setCentralWidget(self.main_widget)
+
+
+        # Title Label
+        self.title_label = QLabel("Unlocked", self.form_frame,self.main_widget)
+        self.title_label.setFont(QFont("Arial", 40, QFont.Bold))
+        self.title_label.setStyleSheet(" margin-bottom: 10px;")
+        self.title_label.setAlignment(Qt.AlignCenter)
+
+        # Welcome Label
+        self.welcome_label = QLabel(f"Student: {self.user_id}, Welcome to {self.lab_name}!", self.main_widget)
+        self.welcome_label.setFont(QFont("Arial", 45, QFont.Bold))
+        self.welcome_label.setStyleSheet(" margin-bottom: 10px;")
+        self.welcome_label.setAlignment(Qt.AlignCenter)
+
+        # Back to Homepage Button
+        self.back_button = QPushButton("Go back to homepage", self.main_widget)
+        self.back_button.setStyleSheet("""
+            text-decoration: underline;
+            color: #006d2e;
+            border: none; 
+            background: transparent; 
+        """)
+        self.back_button.clicked.connect(self.go_back)
+
+
+        main_layout = QVBoxLayout(self.main_widget)
+        main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.title_label)
+        main_layout.addWidget(self.welcome_label)
+        main_layout.addWidget(self.back_button, alignment=Qt.AlignCenter)
+
+    def go_back(self):
+        from main import MainWindow
+        self.main_window = MainWindow(self.lab_id, self.lab_name)
+        self.main_window.show()
+        self.close()
+
