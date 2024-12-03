@@ -15,7 +15,7 @@ class QR_CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("QR_Camera")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 720, 1080)
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_qr_processed = False
@@ -25,17 +25,17 @@ class QR_CameraWindow(QMainWindow):
 
         # Camera Label
         self.camera_frame = QFrame(self.main_widget)
-        self.camera_frame.setFixedSize(700, 400)
+        self.camera_frame.setFixedSize(600, 560)
         self.camera_label = QLabel(self)
-        self.camera_label.setGeometry(50, 50, 700, 400)
+        self.camera_label.setGeometry(50, 50, 600, 560)
         self.camera_label.setStyleSheet("border: 1px solid black;")
 
         # Buttons
         self.bt_frame = QFrame(self.main_widget)
-        self.bt_frame.setFixedSize(700, 100)
+        self.bt_frame.setGeometry(50, 50, 400,100)
 
         button_layout = QHBoxLayout(self.bt_frame)
-        button_layout.setSpacing(20)
+        button_layout.setSpacing(10)
 
         # Face Detection Button
         self.face_button = CustomButton2("Facial Detection", self)
@@ -57,7 +57,7 @@ class QR_CameraWindow(QMainWindow):
             padding: 0;
         """)
         self.back_button.clicked.connect(self.go_back)
-        self.back_button.setGeometry(300, 550, 200, 40)
+        self.back_button.setGeometry(50, 50, 200, 40)
 
         # OpenCV Setup
         self.capture = cv2.VideoCapture(0)
@@ -68,8 +68,10 @@ class QR_CameraWindow(QMainWindow):
         self.show()
 
         main_layout = QVBoxLayout(self.main_widget)
+        main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(self.camera_frame)
+        main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
 
 
@@ -94,7 +96,7 @@ class QR_CameraWindow(QMainWindow):
 
     def reset_qr_flag(self):
         self.is_qr_processed = False
-        
+
     def scan_qr_code(self):
         if self.is_qr_processed:
             return 
@@ -105,7 +107,7 @@ class QR_CameraWindow(QMainWindow):
                 points = obj.polygon
                 if len(points) == 4:
                     pts = [tuple(point) for point in points]
-                    cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 0, 255), 3)
+                    cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
                     self.update_frame(frame)
                 qr_data = obj.data.decode('utf-8')
                 # Step 1: Verify that the QR code data is a 15-digit number
@@ -133,7 +135,7 @@ class QR_CameraWindow(QMainWindow):
                 return
 
             # Extract reservation details
-            lab_id_db, user_id, date, time, verified = reservation[1], reservation[2], reservation[3], reservation[4], reservation[5]
+            lab_id_db, user_id, reservation_date, time, verified = reservation[1], reservation[2], reservation[3], reservation[4], reservation[5]
 
             # Check if the reservation is verified
             if verified != 1:
@@ -144,11 +146,10 @@ class QR_CameraWindow(QMainWindow):
             if lab_id_db != self.lab_id:
                 QMessageBox.warning(self, "Wrong Lab", "The reservation is for a different lab.")
                 return
-
             # Check if the reservation date is valid
             current_date = datetime.date.today()
-            reservation_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-
+            #reservation_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+            print(reservation_date)
             if reservation_date != current_date:
                 if reservation_date < current_date:
                     QMessageBox.warning(self, "Past Reservation", "This reservation date has passed.")
@@ -162,7 +163,6 @@ class QR_CameraWindow(QMainWindow):
 
             current_time_obj = datetime.datetime.strptime(current_time, "%H:%M")
             reservation_time_obj = datetime.datetime.strptime(reservation_time, "%H:%M")
-            
             # Allow a 5-minute window before and after the reservation time
             time_diff = abs((current_time_obj - reservation_time_obj).total_seconds()) / 60
 

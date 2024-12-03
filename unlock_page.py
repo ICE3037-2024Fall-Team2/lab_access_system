@@ -1,16 +1,14 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame
+    QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
 )
 from PyQt5.QtGui import QFont
-from aws_connect import connect_to_rds 
-from custom_button import CustomButton2
 
 class UnlockWindow(QMainWindow):
     def __init__(self, lab_id, lab_name, user_id):
         super().__init__()
         self.setWindowTitle("Unlock")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 720, 1080)
 
         self.lab_id = lab_id 
         self.lab_name = lab_name
@@ -22,14 +20,14 @@ class UnlockWindow(QMainWindow):
 
 
         # Title Label
-        self.title_label = QLabel("Unlocked", self.form_frame,self.main_widget)
-        self.title_label.setFont(QFont("Arial", 40, QFont.Bold))
+        self.title_label = QLabel("Unlocked", self.main_widget)
+        self.title_label.setFont(QFont("Arial", 45, QFont.Bold))
         self.title_label.setStyleSheet(" margin-bottom: 10px;")
         self.title_label.setAlignment(Qt.AlignCenter)
 
         # Welcome Label
         self.welcome_label = QLabel(f"Student: {self.user_id}, Welcome to {self.lab_name}!", self.main_widget)
-        self.welcome_label.setFont(QFont("Arial", 45, QFont.Bold))
+        self.welcome_label.setFont(QFont("Arial", 40, QFont.Bold))
         self.welcome_label.setStyleSheet(" margin-bottom: 10px;")
         self.welcome_label.setAlignment(Qt.AlignCenter)
 

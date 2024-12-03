@@ -10,7 +10,7 @@ class LAbSetWindow(QMainWindow):
     def __init__(self, lab_id=None, lab_name=None):
         super().__init__()
         self.setWindowTitle("Lab Setting")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 720, 1080)
 
         self.lab_id = lab_id if lab_id else None
         self.lab_name = lab_name if lab_name else None
@@ -112,12 +112,15 @@ class LAbSetWindow(QMainWindow):
 
             # Check if admin exists and password matches
             cursor.execute(
-                "SELECT * FROM admin WHERE admin_id = %s AND lab_id = %s",
-                (admin_id, lab_id)
+                "SELECT * FROM admin WHERE admin_id = %s",
+                (admin_id)
             )
             result = cursor.fetchone()
 
-            if result:
+            if not result:
+                QMessageBox.critical(self, "Setting Failed", "Invalid Admin ID.")
+
+            else:
                 cursor.execute(
                 "SELECT lab_name FROM labs WHERE lab_id = %s",
                 (lab_id,)
@@ -131,9 +134,7 @@ class LAbSetWindow(QMainWindow):
                     self.main_window.show()
                     self.close()
                 else:
-                    QMessageBox.critical(self, "Lab Error", "Lab ID does not exist.")
-            else:
-                QMessageBox.critical(self, "Login Failed", "Invalid Admin ID or Lab ID.")
+                    QMessageBox.critical(self, "Setting Failed", "Invalid Lab ID.")
 
         except Exception as e:
             QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
