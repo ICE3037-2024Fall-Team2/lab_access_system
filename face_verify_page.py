@@ -6,10 +6,8 @@ from PyQt5.QtGui import QPixmap, QImage
 import cv2
 import numpy as np
 from custom_button import CustomButton2, CustomButton2_false
-from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 from unlock_page import UnlockWindow
-import aiohttp
-import asyncio
+import requests
 
 class Worker(QThread):
     result_signal = pyqtSignal(np.ndarray)
@@ -34,7 +32,6 @@ class Worker(QThread):
                 self.frame_counter += 1    
                 self.detect_and_process_face(frame)
 
-
     def detect_and_process_face(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
@@ -49,86 +46,38 @@ class Worker(QThread):
 
     def compare_faces(self, frame):
         """Compare detected face with the database faces."""
-        if self.is_face_processed or self.frame_counter % 20 != 0:
+        if self.is_face_processed or self.frame_counter % 50 != 0:
             return
         self.is_face_processed = True
         self.frame_counter = 1
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.async_compare_faces(frame))
+        self.sync_compare_faces(frame)
 
-    async def async_compare_faces(self, frame):
-        async with aiohttp.ClientSession() as session:
+    def sync_compare_faces(self, frame):
+        try:
             _, img_encoded = cv2.imencode('.jpg', frame)
             img_bytes = img_encoded.tobytes()
             files = {
-                'image': img_bytes,  # The image file
-                'lab_id': self.lab_id  # The lab ID
+                'image': ('image.jpg', img_bytes, 'image/jpeg'),
+                'lab_id': (None, self.lab_id)
             }
-            # files = {'image': img_encoded.tobytes()}
-            async with session.post('http://localhost:5001/upload_image', data=files) as response:
-                if response.status == 200:
-                    response_data = await response.json()
-                    if response_data.get('verified') and response_data.get('student_id'):
-                        student_id = response_data['student_id']
-                        self.find_signal.emit(student_id)
-                    else:
-                        self.error_signal.emit("No matching student found")
-                else:
-                    self.error_signal.emit("Failed to detect face")
-                self.is_face_processed = False
-    
-    """
-    def check_res(self,student_id):
-        try:
-            # Connect to database
-            db_conn = connect_to_rds()
-            cursor = db_conn.cursor()
-            
-            print(f"matching face found.{student_id}")
-            today_date = datetime.date.today()
-            # Query the reservations table for the reservation_id
-            # cursor.execute(
-                SELECT * FROM reservations 
-                WHERE user_id = %s AND lab_id = %s AND date = %s AND verified = 1
-                , (student_id, self.lab_id, today_date))
-            reservations = cursor.fetchall()
-
-            if not reservations:
-                self.error_signal.emit("No reservation found for this ID.")
-                return
-
-            current_time = datetime.datetime.now()
-            # Extract reservation details
-            for reservation in reservations:
-                reservation_id, date, time = reservation[0], reservation[3], reservation[4]
-                reservation_time = datetime.datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
-                time_diff = abs((current_time - reservation_time).total_seconds()) / 60
-
-                if time_diff <= 5:
+            response = requests.post('http://localhost:5001/upload_image', files=files)
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data.get('verified') and response_data.get('student_id'):
+                    student_id = response_data['student_id']
                     self.find_signal.emit(student_id)
-                    cursor.execute(
-                                "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
-                                (reservation_id,)
-                            )
-                    db_conn.commit()
-                    return
-            #self.error_signal.emit("You are not within the valid reservation time.") 
-                #return "You are not within the valid reservation time."
-            self.error_signal.emit("You are not within the valid reservation time.")
-
+                else:
+                    self.error_signal.emit("No matching student found")
+            else:
+                self.error_signal.emit("Failed to detect face")
         except Exception as e:
-            print(f"Error in comparing faces: {str(e)}")
-
+            self.error_signal.emit(f"Error occurred: {str(e)}")
         finally:
-            # self.is_face_processed = False
-            if 'db_conn' in locals() and db_conn:
-                db_conn.close()
-"""
+            self.is_face_processed = False
+
     def stop(self):
         self.is_running = False
         self.quit()
-
-
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
         super().__init__()
@@ -136,6 +85,8 @@ class CameraWindow(QMainWindow):
         self.setGeometry(100, 100, 720, 1080)
         self.lab_id = lab_id
         self.lab_name = lab_name
+        self.is_popup_open = False
+        self.current_message_box = None
 
         # Set up the main UI
         self.main_widget = QWidget(self)
@@ -196,9 +147,25 @@ class CameraWindow(QMainWindow):
         self.timer.start(100) 
 
     def show_error_message(self, message):
-        QMessageBox.critical(self, "Error", message)
-    
+        if not self.is_popup_open:
+            self.is_popup_open = True
+            # 创建 QMessageBox 实例
+            self.current_message_box = QMessageBox(self)
+            self.current_message_box.setIcon(QMessageBox.Critical)
+            self.current_message_box.setWindowTitle("Error")
+            self.current_message_box.setText(message)
+            self.current_message_box.setStandardButtons(QMessageBox.Ok)
+            self.current_message_box.finished.connect(self.reset_popup_status)  # 监听弹窗关闭事件
+            self.current_message_box.show()
+
+    def reset_popup_status(self):
+        self.is_popup_open = False
+        self.current_message_box = None
+
     def find_message(self, stu_id):
+        if self.current_message_box:
+            self.current_message_box.close()
+
         self.unlock_window = UnlockWindow(self.lab_id, self.lab_name, stu_id)
         self.unlock_window.show()
         self.close()
