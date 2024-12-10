@@ -19,10 +19,7 @@ class QR_CameraWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("QR_Camera")
         self.showFullScreen()
-        self.adjustSize()
-        #self.setGeometry(100, 100, 720, 1080)
-        self.camera_label.setGeometry(0, 0, self.width(), self.height())  # 填充整个窗口
-        self.camera_label.setScaledContents(True)
+        self.setGeometry(100, 100, 720, 1080)
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_qr_processed = False
@@ -31,8 +28,8 @@ class QR_CameraWindow(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         # Camera Label
-        self.camera_frame = QFrame(self.main_widget)
-        self.camera_frame.setFixedSize(600, 560)
+        #self.camera_frame = QFrame(self.main_widget)
+        #self.camera_frame.setFixedSize(600, 560)
         self.camera_label = QLabel(self)
         self.camera_label.setGeometry(50, 50, 600, 560)
         self.camera_label.setStyleSheet("border: 1px solid black;")
@@ -82,13 +79,15 @@ class QR_CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(self.camera_frame)
+        #main_layout.addWidget(self.camera_frame)
+        main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
 
     def start_face_detection(self):
         from face_verify_page import CameraWindow
         self.picam2.stop()
+        self.picam2 = None
         self.timer.stop()
         self.face_window = CameraWindow(self.lab_id, self.lab_name)
         self.face_window.show()
@@ -103,12 +102,7 @@ class QR_CameraWindow(QMainWindow):
         q_image = QPixmap.fromImage(
             QImage(frame.data, width, height, step, QImage.Format_BGR888)
         )
-        pixmap = q_image.scaled(
-        self.camera_label.width(),
-        self.camera_label.height(),
-        Qt.KeepAspectRatio
-    )
-        self.camera_label.setPixmap(pixmap)
+        self.camera_label.setPixmap(q_image)
         self.scan_qr_code(frame)
 
     def scan_qr_code(self, frame):
@@ -199,6 +193,7 @@ class QR_CameraWindow(QMainWindow):
     def go_back(self):
         from main import MainWindow
         self.picam2.stop()
+        self.picam2 = None
         self.timer.stop()
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
@@ -206,5 +201,6 @@ class QR_CameraWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.picam2.stop()
+        self.picam2 = None
         self.timer.stop()
         event.accept()

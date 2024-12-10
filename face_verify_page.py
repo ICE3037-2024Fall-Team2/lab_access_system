@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QFrame, QWidget
 )
 from PyQt5.QtGui import QPixmap, QImage
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview
 from libcamera import controls
 import cv2
 import numpy as np
@@ -81,6 +81,7 @@ class Worker(QThread):
     def stop(self):
         self.is_running = False
         self.picam2.stop()
+        self.picam2 = None
         self.quit()
 
 
@@ -95,7 +96,6 @@ class CameraWindow(QMainWindow):
         self.is_popup_open = False
         self.current_message_box = None
 
-        # Picamera2 初始化
         self.picam2 = Picamera2()
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
@@ -144,14 +144,12 @@ class CameraWindow(QMainWindow):
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
 
-        # 创建 Worker 线程
         self.worker = Worker(self.picam2, self.lab_id, self.lab_name)
         self.worker.result_signal.connect(self.update_frame)
         self.worker.error_signal.connect(self.show_error_message)
         self.worker.find_signal.connect(self.find_message)
         self.worker.start()
 
-        # 定时器更新界面
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_camera_frame)
         self.timer.start(100)
@@ -192,8 +190,10 @@ class CameraWindow(QMainWindow):
 
     def start_qr_recognition(self):
         from qr_verify_page import QR_CameraWindow
-        self.picam2.stop()
+        #self.picam2.stop()
         self.timer.stop()
+        self.worker.stop()
+        self.worker.wait()
         self.qr_window = QR_CameraWindow(self.lab_id, self.lab_name)
         self.qr_window.show()
         self.close()
