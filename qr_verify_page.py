@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QFrame, QWidget
 )
 from PyQt5.QtGui import QPixmap, QImage
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview
 from libcamera import controls
 from pyzbar.pyzbar import decode
 from custom_button import CustomButton2, CustomButton2_false
@@ -19,7 +19,10 @@ class QR_CameraWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("QR_Camera")
         self.showFullScreen()
-        self.setGeometry(100, 100, 720, 1080)
+        self.adjustSize()
+        #self.setGeometry(100, 100, 720, 1080)
+        self.camera_label.setGeometry(0, 0, self.width(), self.height())  # 填充整个窗口
+        self.camera_label.setScaledContents(True)
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_qr_processed = False
@@ -100,7 +103,12 @@ class QR_CameraWindow(QMainWindow):
         q_image = QPixmap.fromImage(
             QImage(frame.data, width, height, step, QImage.Format_BGR888)
         )
-        self.camera_label.setPixmap(q_image)
+        pixmap = q_image.scaled(
+        self.camera_label.width(),
+        self.camera_label.height(),
+        Qt.KeepAspectRatio
+    )
+        self.camera_label.setPixmap(pixmap)
         self.scan_qr_code(frame)
 
     def scan_qr_code(self, frame):
