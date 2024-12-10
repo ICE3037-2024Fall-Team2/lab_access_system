@@ -19,13 +19,13 @@ class Worker(QThread):
     def __init__(self, picam2, lab_id, lab_name):
         super().__init__()
         self.picam2 = picam2
+        self.picam2.start()
         self.is_running = True
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_face_processed = False
         self.frame_counter = 1
 
-        # 加载 Haar 特征分类器
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     def run(self):
@@ -80,6 +80,7 @@ class Worker(QThread):
 
     def stop(self):
         self.is_running = False
+        self.picam2.stop()
         self.quit()
 
 
@@ -88,6 +89,7 @@ class CameraWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Face_Camera")
         self.showFullScreen()
+        self.setGeometry(100, 100, 720, 1080)
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_popup_open = False
@@ -97,7 +99,6 @@ class CameraWindow(QMainWindow):
         self.picam2 = Picamera2()
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
-        self.picam2.start()
         
         # Set up the main UI
         self.main_widget = QWidget(self)
@@ -199,8 +200,10 @@ class CameraWindow(QMainWindow):
 
     def go_back(self):
         from main import MainWindow
-        self.picam2.stop()
+        #self.picam2.stop()
         self.timer.stop()
+        self.worker.stop()
+        self.worker.wait()
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
@@ -208,6 +211,6 @@ class CameraWindow(QMainWindow):
     def closeEvent(self, event):
         self.worker.stop()
         self.worker.wait()
-        self.picam2.stop()
+        #self.picam2.stop()
         self.timer.stop()
         event.accept()
