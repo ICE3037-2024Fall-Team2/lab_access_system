@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QImage
 from picamera2 import Picamera2, Preview
+from libcamera import controls
 from pyzbar.pyzbar import decode
 from custom_button import CustomButton2, CustomButton2_false
 import datetime
@@ -63,6 +64,7 @@ class QR_CameraWindow(QMainWindow):
         # PiCamera2 Setup
         self.picam2 = Picamera2()
         self.picam2.configure(self.picam2.create_preview_configuration(main={"size": (640, 480)}))
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
 
         # Timer for frame updates
