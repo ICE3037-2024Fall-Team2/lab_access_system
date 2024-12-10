@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 )
 from custom_button import CustomButton1, CustomButton1_false
-from qr_verify_page import QR_CameraWindow
+#from qr_verify_page import QR_CameraWindow
+from stream_page import StreamWindow
 from setting_page import LAbSetWindow
 
 class MainWindow(QMainWindow):
@@ -25,13 +26,13 @@ class MainWindow(QMainWindow):
 
         if self.lab_id is None or self.lab_name is None:
             self.welcome_label = QLabel("Please set the lab!", self)
-            self.welcome_label.setStyleSheet("font-size: 50px; font-weight: bold;")
+            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
             self.unlock_button = CustomButton1_false("Unlock", self)
             self.unlock_button.setEnabled(False)  # 禁用按钮
         else:
-            self.welcome_label = QLabel(f"Welcome to {self.lab_name}!", self)
+            self.welcome_label = QLabel(f"Welcome to <br>{self.lab_name}!", self)
             
-            self.welcome_label.setStyleSheet("font-size: 50px; font-weight: bold;")
+            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
             self.unlock_button = CustomButton1("Unlock", self)
             self.unlock_button.setEnabled(True)  # 启用按钮
         #self.welcome_label = QLabel("Please set the lab!", self)
@@ -53,16 +54,22 @@ class MainWindow(QMainWindow):
         # Add the button layout to the main vertical layout
         layout.addLayout(unlock_button_layout)
 
-        set_button_layout = QHBoxLayout()
+        trans_button_layout = QHBoxLayout()
+        trans_button_layout.setSpacing(20)
+        # Create a "Exit" button
+        self.exit_button = CustomButton1("Exit", self)
+        self.exit_button.setFixedSize(200, 60)
+        self.exit_button.clicked.connect(self.close_application)  # Connect to settings page
         # Create a "Setting" button
         self.setting_button = CustomButton1("Setting", self)
         self.setting_button.setFixedSize(200, 60)
         self.setting_button.clicked.connect(self.open_settings_page)  # Connect to settings page
         layout.addWidget(self.setting_button)
-        set_button_layout.addWidget(self.setting_button)
-        set_button_layout.setAlignment(Qt.AlignCenter)  # Center the button horizontally
+        trans_button_layout.addWidget(self.exit_button)
+        trans_button_layout.addWidget(self.setting_button)
+        trans_button_layout.setAlignment(Qt.AlignCenter)  # Center the button horizontally
         # Add the button layout to the main vertical layout
-        layout.addLayout(set_button_layout)
+        layout.addLayout(trans_button_layout)
 
         # Center the entire layout in the window
         layout.setAlignment(Qt.AlignCenter)
@@ -76,7 +83,7 @@ class MainWindow(QMainWindow):
         self.show()
 
     def open_camera_page(self):
-        self.camera_window = QR_CameraWindow(self.lab_id,self.lab_name)
+        self.camera_window = StreamWindow(self.lab_id,self.lab_name)
         self.camera_window.show()
         self.close()
 
@@ -84,6 +91,9 @@ class MainWindow(QMainWindow):
         self.setting_window = LAbSetWindow(self.lab_id, self.lab_name)
         self.setting_window.show()
         self.close()
+
+    def close_application(self):
+        QApplication.quit()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
