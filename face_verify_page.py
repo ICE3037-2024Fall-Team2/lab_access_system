@@ -26,8 +26,8 @@ class Worker(QThread):
         self.is_face_processed = False
         self.frame_counter = 1
 
-        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
+        #self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        self.face_cascade = cv2.CascadeClassifier('~/opencv_haarcascades/haarcascade_frontalface_default.xml')
     def run(self):
         while self.is_running:
             frame = self.picam2.capture_array()
@@ -80,8 +80,10 @@ class Worker(QThread):
 
     def stop(self):
         self.is_running = False
-        self.picam2.stop()
-        self.picam2 = None
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.quit()
 
 
@@ -191,6 +193,7 @@ class CameraWindow(QMainWindow):
     def start_qr_recognition(self):
         from qr_verify_page import QR_CameraWindow
         #self.picam2.stop()
+        self.picam2 = None
         self.timer.stop()
         self.worker.stop()
         self.worker.wait()
@@ -201,6 +204,7 @@ class CameraWindow(QMainWindow):
     def go_back(self):
         from main import MainWindow
         #self.picam2.stop()
+        self.picam2 = None
         self.timer.stop()
         self.worker.stop()
         self.worker.wait()
@@ -209,6 +213,7 @@ class CameraWindow(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
+        self.picam2 = None
         self.worker.stop()
         self.worker.wait()
         #self.picam2.stop()

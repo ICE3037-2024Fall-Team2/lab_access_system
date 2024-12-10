@@ -64,6 +64,7 @@ class QR_CameraWindow(QMainWindow):
         self.back_button.setGeometry(50, 50, 200, 40)
 
         # PiCamera2 Setup
+        self.picam2 = None
         self.picam2 = Picamera2()
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
@@ -86,8 +87,10 @@ class QR_CameraWindow(QMainWindow):
 
     def start_face_detection(self):
         from face_verify_page import CameraWindow
-        self.picam2.stop()
-        self.picam2 = None
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.timer.stop()
         self.face_window = CameraWindow(self.lab_id, self.lab_name)
         self.face_window.show()
@@ -192,15 +195,19 @@ class QR_CameraWindow(QMainWindow):
 
     def go_back(self):
         from main import MainWindow
-        self.picam2.stop()
-        self.picam2 = None
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.timer.stop()
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
 
     def closeEvent(self, event):
-        self.picam2.stop()
-        self.picam2 = None
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.timer.stop()
         event.accept()
