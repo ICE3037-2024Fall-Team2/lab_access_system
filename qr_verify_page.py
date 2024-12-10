@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QFrame, QWidget
 )
 from PyQt5.QtGui import QPixmap, QImage
-from picamera2 import Picamera2, Preview
+from picamera2 import Picamera2
 from libcamera import controls
 from pyzbar.pyzbar import decode
 from custom_button import CustomButton2, CustomButton2_false
@@ -18,6 +18,7 @@ class QR_CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("QR_Camera")
+        self.showFullScreen()
         self.setGeometry(100, 100, 720, 1080)
         self.lab_id = lab_id
         self.lab_name = lab_name
@@ -64,7 +65,7 @@ class QR_CameraWindow(QMainWindow):
 
         # PiCamera2 Setup
         self.picam2 = Picamera2()
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"size": (640, 480)}))
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
 
@@ -93,11 +94,11 @@ class QR_CameraWindow(QMainWindow):
     def update_frame(self):
         frame = self.picam2.capture_array()
         frame = cv2.flip(frame, 1)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
         step = channel * width
         q_image = QPixmap.fromImage(
-            QImage(frame.data, width, height, step, QImage.Format_RGB888)
+            QImage(frame.data, width, height, step, QImage.Format_BGR888)
         )
         self.camera_label.setPixmap(q_image)
         self.scan_qr_code(frame)

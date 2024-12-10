@@ -8,6 +8,7 @@ class UnlockWindow(QMainWindow):
     def __init__(self, lab_id, lab_name, user_id):
         super().__init__()
         self.setWindowTitle("Unlock")
+        self.showFullScreen()
         self.setGeometry(100, 100, 720, 1080)
 
         self.lab_id = lab_id 

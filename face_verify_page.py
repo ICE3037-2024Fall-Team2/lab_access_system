@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QFrame, QWidget
 )
 from PyQt5.QtGui import QPixmap, QImage
+from picamera2 import Picamera2
+from libcamera import controls
 import cv2
 import numpy as np
 from custom_button import CustomButton2, CustomButton2_false
@@ -14,29 +16,30 @@ class Worker(QThread):
     find_signal = pyqtSignal(str)
     error_signal = pyqtSignal(str)
 
-    def __init__(self, capture, lab_id, lab_name):
+    def __init__(self, picam2, lab_id, lab_name):
         super().__init__()
-        self.capture = capture
+        self.picam2 = picam2
         self.is_running = True
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_face_processed = False
         self.frame_counter = 1
 
+        # 加载 Haar 特征分类器
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     def run(self):
         while self.is_running:
-            ret, frame = self.capture.read()
-            if ret: 
-                self.frame_counter += 1    
+            frame = self.picam2.capture_array()
+            if frame is not None:
+                self.frame_counter += 1
                 self.detect_and_process_face(frame)
 
     def detect_and_process_face(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-        if len(faces) > 0:  
+        if len(faces) > 0:
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
@@ -78,16 +81,24 @@ class Worker(QThread):
     def stop(self):
         self.is_running = False
         self.quit()
+
+
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("Face_Camera")
-        self.setGeometry(100, 100, 720, 1080)
+        self.showFullScreen()
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_popup_open = False
         self.current_message_box = None
 
+        # Picamera2 初始化
+        self.picam2 = Picamera2()
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.picam2.start()
+        
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
@@ -101,7 +112,7 @@ class CameraWindow(QMainWindow):
 
         # Buttons
         self.bt_frame = QFrame(self.main_widget)
-        self.bt_frame.setGeometry(50, 50, 400,100)
+        self.bt_frame.setGeometry(50, 50, 400, 100)
         button_layout = QHBoxLayout(self.bt_frame)
         button_layout.setSpacing(20)
 
@@ -132,30 +143,27 @@ class CameraWindow(QMainWindow):
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
 
-        self.capture = cv2.VideoCapture(0)
-
-
-        self.worker = Worker(self.capture,self.lab_id,self.lab_name)
+        # 创建 Worker 线程
+        self.worker = Worker(self.picam2, self.lab_id, self.lab_name)
         self.worker.result_signal.connect(self.update_frame)
-        self.worker.error_signal.connect(self.show_error_message) 
-        self.worker.find_signal.connect(self.find_message) 
+        self.worker.error_signal.connect(self.show_error_message)
+        self.worker.find_signal.connect(self.find_message)
         self.worker.start()
 
-
+        # 定时器更新界面
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_camera_frame)
-        self.timer.start(100) 
+        self.timer.start(100)
 
     def show_error_message(self, message):
         if not self.is_popup_open:
             self.is_popup_open = True
-            # 创建 QMessageBox 实例
             self.current_message_box = QMessageBox(self)
             self.current_message_box.setIcon(QMessageBox.Critical)
             self.current_message_box.setWindowTitle("Error")
             self.current_message_box.setText(message)
             self.current_message_box.setStandardButtons(QMessageBox.Ok)
-            self.current_message_box.finished.connect(self.reset_popup_status)  # 监听弹窗关闭事件
+            self.current_message_box.finished.connect(self.reset_popup_status)
             self.current_message_box.show()
 
     def reset_popup_status(self):
@@ -171,41 +179,35 @@ class CameraWindow(QMainWindow):
         self.close()
 
     def update_frame(self, frame):
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
         step = channel * width
-        q_image = QImage(frame.data, width, height, step, QImage.Format_RGB888)
+        q_image = QImage(frame.data, width, height, step, QImage.Format_BGR888)
         pixmap = QPixmap.fromImage(q_image)
         self.camera_label.setPixmap(pixmap)
 
     def update_camera_frame(self):
-        pass 
-    
+        pass
 
     def start_qr_recognition(self):
-        """Switch to QR recognition screen."""
         from qr_verify_page import QR_CameraWindow
-        self.capture.release()
+        self.picam2.stop()
         self.timer.stop()
         self.qr_window = QR_CameraWindow(self.lab_id, self.lab_name)
         self.qr_window.show()
         self.close()
 
     def go_back(self):
-        """Go back to the homepage."""
         from main import MainWindow
-        self.capture.release()
+        self.picam2.stop()
         self.timer.stop()
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
 
     def closeEvent(self, event):
-        """Release the capture and stop the timer when the window is closed."""
         self.worker.stop()
-        self.worker.wait() 
-        self.capture.release()
+        self.worker.wait()
+        self.picam2.stop()
         self.timer.stop()
         event.accept()
-
-

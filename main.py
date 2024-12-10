@@ -11,6 +11,7 @@ class MainWindow(QMainWindow):
     def __init__(self, lab_id=None, lab_name=None):
         super().__init__()
         self.setWindowTitle("Lab Reservation System")
+        self.showFullScreen()
         self.setGeometry(100, 100, 720, 1080)
 
         self.lab_id = lab_id if lab_id else None
