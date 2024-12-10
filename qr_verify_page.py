@@ -11,6 +11,7 @@ import datetime
 from aws_connect import connect_to_rds
 from unlock_page import UnlockWindow
 import numpy as np
+import cv2
 
 
 class QR_CameraWindow(QMainWindow):
@@ -91,6 +92,7 @@ class QR_CameraWindow(QMainWindow):
 
     def update_frame(self):
         frame = self.picam2.capture_array()
+        frame = cv2.flip(frame, 1)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
         step = channel * width
