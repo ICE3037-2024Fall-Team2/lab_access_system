@@ -116,8 +116,72 @@ class QR_CameraWindow(QMainWindow):
                 break
 
     def verify_reservation(self, reservation_id):
-        # Same verification logic as your original implementation
-        pass
+        try:
+            # Connect to database
+            db_conn = connect_to_rds()
+            cursor = db_conn.cursor()
+
+            # Query the reservations table for the reservation_id
+            cursor.execute("SELECT * FROM reservations WHERE reservation_id = %s", (reservation_id,))
+            reservation = cursor.fetchone()
+
+            if not reservation:
+                QMessageBox.warning(self, "Error", "No reservation found for this ID.")
+                return
+
+            # Extract reservation details
+            lab_id_db, user_id, reservation_date, time, verified = reservation[1], reservation[2], reservation[3], reservation[4], reservation[5]
+
+            # Check if the reservation is verified
+            if verified != 1:
+                QMessageBox.warning(self, "Unverified Reservation", "This reservation is not verified.")
+                return
+
+            # Check if the lab_id matches
+            if lab_id_db != self.lab_id:
+                QMessageBox.warning(self, "Wrong Lab", "The reservation is for a different lab.")
+                return
+            # Check if the reservation date is valid
+            current_date = datetime.date.today()
+            #reservation_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+            print(reservation_date)
+            if reservation_date != current_date:
+                if reservation_date < current_date:
+                    QMessageBox.warning(self, "Past Reservation", "This reservation date has passed.")
+                else:
+                    QMessageBox.warning(self, "Future Reservation", "This reservation is for a future date.")
+                return
+
+            # Check if the current time is within 5 minutes of the reservation time
+            current_time = datetime.datetime.now().strftime("%H:%M")
+            reservation_time = time
+
+            current_time_obj = datetime.datetime.strptime(current_time, "%H:%M")
+            reservation_time_obj = datetime.datetime.strptime(reservation_time, "%H:%M")
+            # Allow a 5-minute window before and after the reservation time
+            time_diff = abs((current_time_obj - reservation_time_obj).total_seconds()) / 60
+
+            if time_diff <= 5:
+                # Step 9: Unlock window and update 'checked' to 1
+                self.unlock_window = UnlockWindow(self.lab_id, self.lab_id, user_id)
+                self.unlock_window.show()
+                self.close()
+                
+                cursor.execute(
+                    "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
+                    (reservation_id,)
+                )
+                db_conn.commit()
+            else:
+                QMessageBox.warning(self, "Not the Reservation Time", "You are not within the valid reservation time window.")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
+        finally:
+            self.is_qr_processed = False
+            if 'db_conn' in locals() and db_conn:
+                db_conn.close()
+
 
     def go_back(self):
         from main import MainWindow
