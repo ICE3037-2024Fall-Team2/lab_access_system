@@ -27,7 +27,7 @@ class Worker(QThread):
         self.frame_counter = 1
 
         #self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        self.face_cascade = cv2.CascadeClassifier('~/opencv_haarcascades/haarcascade_frontalface_default.xml')
+        self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
     def run(self):
         while self.is_running:
             frame = self.picam2.capture_array()
@@ -84,7 +84,7 @@ class Worker(QThread):
 
 
 class CameraWindow(QMainWindow):
-    def __init__(self, picam2,lab_id, lab_name):
+    def __init__(self, lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("Face_Camera")
         self.showFullScreen()
@@ -94,11 +94,16 @@ class CameraWindow(QMainWindow):
         self.is_popup_open = False
         self.current_message_box = None
 
-        self.picam2 = picam2
- 
+        self.picam2 = Picamera2()
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.picam2.srart()
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
+
+        self.welcome_label = QLabel("Please show your QR-code", self)
+        self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
 
         # Camera Label
         self.camera_frame = QFrame(self.main_widget)
@@ -107,6 +112,7 @@ class CameraWindow(QMainWindow):
         self.camera_label.setGeometry(50, 50, 600, 560)
         self.camera_label.setStyleSheet("border: 1px solid black;")
 
+        """
         # Buttons
         self.bt_frame = QFrame(self.main_widget)
         self.bt_frame.setGeometry(50, 50, 400, 100)
@@ -120,7 +126,7 @@ class CameraWindow(QMainWindow):
         self.qr_button = CustomButton2("QR Code Recognition", self)
         self.qr_button.clicked.connect(self.start_qr_recognition)
         button_layout.addWidget(self.qr_button)
-
+        """
         self.back_button = QPushButton("Go back to homepage", self)
         self.back_button.setStyleSheet("""
             text-decoration: underline;
@@ -136,6 +142,7 @@ class CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_frame)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
@@ -185,15 +192,19 @@ class CameraWindow(QMainWindow):
     def update_camera_frame(self):
         pass
 
-    def start_qr_recognition(self):
-        from qr_verify_page import QR_CameraWindow
-        #self.picam2.stop()
-        self.timer.stop()
-        self.worker.stop()
-        self.worker.wait()
-        self.qr_window = QR_CameraWindow(self.picam2, self.lab_id, self.lab_name)
-        self.qr_window.show()
-        self.close()
+    #def start_qr_recognition(self):
+    #    from qr_verify_page import QR_CameraWindow
+    #    #self.picam2.stop()
+    #    self.timer.stop()
+    #    self.worker.stop()
+    #    self.worker.wait()
+    #    if self.picam2:
+    #        self.picam2.stop()
+    #        self.picam2.close()
+    #        self.picam2 = None
+    #    self.qr_window = QR_CameraWindow(self.lab_id, self.lab_name)
+    #    self.qr_window.show()
+    #    self.close()
 
     def go_back(self):
         from main import MainWindow
