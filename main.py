@@ -1,11 +1,13 @@
 import sys
+from picamera2 import Picamera2
+from libcamera import controls
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 )
 from custom_button import CustomButton1, CustomButton1_false
-#from qr_verify_page import QR_CameraWindow
-from stream_page import StreamWindow
+from qr_verify_page import QR_CameraWindow
+#from stream_page import StreamWindow
 from setting_page import LAbSetWindow
 
 class MainWindow(QMainWindow):
@@ -83,7 +85,13 @@ class MainWindow(QMainWindow):
         self.show()
 
     def open_camera_page(self):
-        self.camera_window = StreamWindow(self.lab_id,self.lab_name)
+        # PiCamera2 Setup
+        self.picam2 = None
+        self.picam2 = Picamera2()
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.picam2.start()
+        self.camera_window = QR_CameraWindow(self.picam2,self.lab_id,self.lab_name)
         self.camera_window.show()
         self.close()
 

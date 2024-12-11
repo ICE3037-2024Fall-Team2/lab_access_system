@@ -19,7 +19,7 @@ class Worker(QThread):
     def __init__(self, picam2, lab_id, lab_name):
         super().__init__()
         self.picam2 = picam2
-        self.picam2.start()
+        #self.picam2.start()
         self.is_running = True
         self.lab_id = lab_id
         self.lab_name = lab_name
@@ -80,15 +80,11 @@ class Worker(QThread):
 
     def stop(self):
         self.is_running = False
-        if self.picam2:
-            self.picam2.stop()
-            self.picam2.close()
-            self.picam2 = None
         self.quit()
 
 
 class CameraWindow(QMainWindow):
-    def __init__(self, lab_id, lab_name):
+    def __init__(self, picam2,lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("Face_Camera")
         self.showFullScreen()
@@ -98,10 +94,8 @@ class CameraWindow(QMainWindow):
         self.is_popup_open = False
         self.current_message_box = None
 
-        self.picam2 = Picamera2()
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
-        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
-        
+        self.picam2 = picam2
+ 
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
@@ -179,6 +173,7 @@ class CameraWindow(QMainWindow):
         self.unlock_window.show()
         self.close()
 
+
     def update_frame(self, frame):
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
@@ -193,29 +188,35 @@ class CameraWindow(QMainWindow):
     def start_qr_recognition(self):
         from qr_verify_page import QR_CameraWindow
         #self.picam2.stop()
-        self.picam2 = None
         self.timer.stop()
         self.worker.stop()
         self.worker.wait()
-        self.qr_window = QR_CameraWindow(self.lab_id, self.lab_name)
+        self.qr_window = QR_CameraWindow(self.picam2, self.lab_id, self.lab_name)
         self.qr_window.show()
         self.close()
 
     def go_back(self):
         from main import MainWindow
         #self.picam2.stop()
-        self.picam2 = None
+        #self.picam2 = None
         self.timer.stop()
         self.worker.stop()
         self.worker.wait()
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
 
     def closeEvent(self, event):
-        self.picam2 = None
         self.worker.stop()
         self.worker.wait()
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         #self.picam2.stop()
         self.timer.stop()
         event.accept()

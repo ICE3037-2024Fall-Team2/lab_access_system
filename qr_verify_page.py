@@ -15,7 +15,7 @@ import cv2
 
 
 class QR_CameraWindow(QMainWindow):
-    def __init__(self, lab_id, lab_name):
+    def __init__(self, picam2,lab_id, lab_name):
         super().__init__()
         self.setWindowTitle("QR_Camera")
         self.showFullScreen()
@@ -23,6 +23,10 @@ class QR_CameraWindow(QMainWindow):
         self.lab_id = lab_id
         self.lab_name = lab_name
         self.is_qr_processed = False
+        self.is_popup_open = False
+        self.current_message_box = None
+        self.is_face_processed = False
+        self.frame_counter = 1
 
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
@@ -64,11 +68,8 @@ class QR_CameraWindow(QMainWindow):
         self.back_button.setGeometry(50, 50, 200, 40)
 
         # PiCamera2 Setup
-        self.picam2 = None
-        self.picam2 = Picamera2()
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
-        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
-        self.picam2.start()
+        self.picam2 = picam2
+
 
         # Timer for frame updates
         self.timer = QTimer(self)
@@ -124,6 +125,8 @@ class QR_CameraWindow(QMainWindow):
                 self.is_qr_processed = True
                 QTimer.singleShot(100, lambda: self.verify_reservation(reservation_id))
                 break
+            else:
+                QMessageBox.warning(self, "Error", "Not a valid QR-code.")
 
     def verify_reservation(self, reservation_id):
         try:
