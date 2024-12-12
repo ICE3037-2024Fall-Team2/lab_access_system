@@ -103,21 +103,24 @@ class QR_CameraWindow(QMainWindow):
     #    self.face_window.show()
     #    self.close()
 
-    def update_frame(self):
-        frame = self.picam2.capture_array()
-        frame = cv2.flip(frame, 1)
-        frame = self.scan_qr_code(frame)
-        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        height, width, channel = frame.shape
-        step = channel * width
-        q_image = QPixmap.fromImage(
-            QImage(frame.data, width, height, step, QImage.Format_BGR888)
-        )
-        self.camera_label.setPixmap(q_image)
+    def update_frame(self,frame):
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            height, width, channel = frame.shape
+            step = channel * width
+            q_image = QPixmap.fromImage(
+                QImage(frame.data, width, height, step, QImage.Format_BGR888)
+            )
+            self.camera_label.setPixmap(q_image)
+            # self.scan_qr_code(frame)
 
-    def scan_qr_code(self, frame):
-        if self.is_qr_processed:
-            return frame
+        
+    def scan_qr_code(self):
+        #ret, frame = self.capture.read()
+        frame = self.picam2.capture_array()
+        if frame is None: 
+            return
+        frame = cv2.flip(frame, 1)
+
         decoded_objects = decode(frame)
         for obj in decoded_objects:
             points = obj.polygon
@@ -127,14 +130,18 @@ class QR_CameraWindow(QMainWindow):
             #(x, y, w, h) = obj.rect
             #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
             qr_data = obj.data.decode('utf-8')
+            # Step 1: Verify that the QR code data is a 15-digit number
             if len(qr_data) == 15 and qr_data.isdigit():
                 reservation_id = qr_data
-                self.is_qr_processed = True
-                QTimer.singleShot(100, lambda: self.verify_reservation(reservation_id))
+                #self.verify_reservation(reservation_id)
+                if self.is_qr_processed == False:
+                    self.is_qr_processed = True
+                    QTimer.singleShot(100, lambda: self.verify_reservation(reservation_id))
+                # Stop the scan after processing one QR code
                 break
             else:
                 QMessageBox.warning(self, "Error", "Not a valid QR-code.")
-            return frame
+        self.update_frame(frame)
 
     def verify_reservation(self, reservation_id):
         try:
@@ -217,7 +224,7 @@ class QR_CameraWindow(QMainWindow):
         self.timer.stop()
         self.face_window = CameraWindow(self.lab_id,self.lab_name)
         self.face_window.show()
-        QTimer.singleShot(100, self.close)
+        QTimer.singleShot(80, self.close)
 
     def go_back(self):
         from main import MainWindow
