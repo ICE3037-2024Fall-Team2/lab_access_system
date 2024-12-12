@@ -44,11 +44,12 @@ class Worker(QThread):
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        while not self.task_queue.empty():
-            task = self.task_queue.get()
-            print("there is task test")
-            lab_id, image = task
-            loop.run_until_complete(self.send_request(lab_id, image))
+        while True:  # 持续运行
+                if not self.task_queue.empty():
+                    task = self.task_queue.get()
+                    print("there is task test")
+                    lab_id, image = task
+                    loop.run_until_complete(self.send_request(lab_id, image))
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
@@ -116,6 +117,7 @@ class CameraWindow(QMainWindow):
         #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
+        main_layout.addWidget(self.bt_frame)
 
         # Timer to capture frames and process in main thread
         self.timer = QTimer(self)
