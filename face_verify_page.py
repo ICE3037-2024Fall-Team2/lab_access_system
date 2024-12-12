@@ -184,14 +184,30 @@ class CameraWindow(QMainWindow):
         self.unlock_window.show()
         self.close()
 
+    def start_qr_recognition(self):
+        from qr_verify_page import QR_CameraWindow
+        self.timer.stop()
+        if self.worker.isRunning():
+            self.worker.quit()
+            self.worker.wait()
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
+        self.qr_window = QR_CameraWindow(self.lab_id,self.lab_name)
+        self.qr_window.show()
+        self.close()
+
     def go_back(self):
         from main import MainWindow
         self.timer.stop()
         if self.worker.isRunning():
             self.worker.quit()
             self.worker.wait()
-        self.picam2.stop()
-        self.picam2.close()
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
@@ -201,6 +217,8 @@ class CameraWindow(QMainWindow):
         if self.worker.isRunning():
             self.worker.quit()
             self.worker.wait()
-        self.picam2.stop()
-        self.picam2.close()
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
         event.accept()

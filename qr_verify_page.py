@@ -201,6 +201,16 @@ class QR_CameraWindow(QMainWindow):
             if 'db_conn' in locals() and db_conn:
                 db_conn.close()
 
+    def start_face_detection(self):
+        from face_verify_page import CameraWindow
+        if self.picam2:
+            self.picam2.stop()
+            self.picam2.close()
+            self.picam2 = None
+        self.timer.stop()
+        self.face_window = CameraWindow(self.lab_id,self.lab_name)
+        self.face_window.show()
+        self.close()
 
     def go_back(self):
         from main import MainWindow
