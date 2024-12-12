@@ -34,8 +34,8 @@ class QR_CameraWindow(QMainWindow):
         # Camera Label
         #self.camera_frame = QFrame(self.main_widget)
         #self.camera_frame.setFixedSize(600, 560)
-        self.welcome_label = QLabel("Please show your QR-code", self)
-        self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
+        #self.welcome_label = QLabel("Please show your QR-code", self)
+        #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
 
         self.camera_label = QLabel(self)
         self.camera_label.setGeometry(50, 50, 600, 560)
@@ -44,7 +44,7 @@ class QR_CameraWindow(QMainWindow):
         # Buttons
         self.bt_frame = QFrame(self.main_widget)
         self.bt_frame.setGeometry(50, 50, 400, 100)
-        """
+  
         button_layout = QHBoxLayout(self.bt_frame)
         button_layout.setSpacing(10)
 
@@ -57,7 +57,7 @@ class QR_CameraWindow(QMainWindow):
         self.qr_button = CustomButton2_false("QR Code Recognition", self)
         self.qr_button.setEnabled(False)  # Disable the button to prevent interaction
         button_layout.addWidget(self.qr_button)
-        """ 
+
         # Back to Homepage Button
         self.back_button = QPushButton("Go back to homepage", self)
         self.back_button.setStyleSheet("""
@@ -87,7 +87,7 @@ class QR_CameraWindow(QMainWindow):
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
         #main_layout.addWidget(self.camera_frame)
-        main_layout.addWidget(self.welcome_label)
+        #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)

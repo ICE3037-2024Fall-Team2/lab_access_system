@@ -1,6 +1,4 @@
 import sys
-from picamera2 import Picamera2
-from libcamera import controls
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
@@ -24,41 +22,6 @@ class MainWindow(QMainWindow):
         # Create a central widget and layout
         central_widget = QWidget(self)
         layout = QVBoxLayout(central_widget)
-        
-        # Welcome label (Centered with text)
-
-        if self.lab_id is None or self.lab_name is None:
-            self.welcome_label = QLabel("Please set the lab!", self)
-            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
-            self.qr_unlock_button = CustomButton1_false("QR Unlock", self)
-            self.face_unlock_button = CustomButton1_false("Face Unlock", self)
-            self.qr_unlock_button.setEnabled(False)  # 禁用按钮
-        else:
-            self.welcome_label = QLabel(f"Welcome to <br>{self.lab_name}!", self)
-            
-            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
-            self.qr_unlock_button = CustomButton1("QR Unlock", self)
-            self.face_unlock_button = CustomButton1("Face Unlock", self)
-            self.qr_unlock_button.setEnabled(True)  # 启用按钮
-        #self.welcome_label = QLabel("Please set the lab!", self)
-        #self.welcome_label.setStyleSheet("font-size: 50px; font-weight: bold;")
-        self.welcome_label.setAlignment(Qt.AlignCenter)  # Center align the text
-        layout.addWidget(self.welcome_label)
-
-        # Add a spacer between label and button
-        layout.addSpacing(20)  # Adds 20px of vertical space between label and button
-
-        # Create a horizontal layout to center the button
-        unlock_button_layout = QVBoxLayout()
-        # Unlock button with rounded corners and adjusted size
-        self.face_unlock_button.setFixedSize(200, 60)
-        self.qr_unlock_button.setFixedSize(200, 60)
-        # Add the button to the horizontal layout to center it
-        unlock_button_layout.addWidget(self.qr_unlock_button)
-        unlock_button_layout.addWidget(self.face_unlock_button)
-        unlock_button_layout.setAlignment(Qt.AlignCenter)  # Center the button horizontally
-        # Add the button layout to the main vertical layout
-        layout.addLayout(unlock_button_layout)
 
         trans_button_layout = QHBoxLayout()
         trans_button_layout.setSpacing(20)
@@ -77,6 +40,41 @@ class MainWindow(QMainWindow):
         # Add the button layout to the main vertical layout
         layout.addLayout(trans_button_layout)
 
+                # Welcome label (Centered with text)
+
+        if self.lab_id is None or self.lab_name is None:
+            self.welcome_label = QLabel("Please set the lab!", self)
+            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
+            self.qr_unlock_button = CustomButton1_false("Unlock", self)
+            #self.face_unlock_button = CustomButton1_false("Face Unlock", self)
+            self.qr_unlock_button.setEnabled(False)  # 禁用按钮
+        else:
+            self.welcome_label = QLabel(f"Welcome to <br>{self.lab_name}!", self)
+            
+            self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
+            self.qr_unlock_button = CustomButton1("Unlock", self)
+            #self.face_unlock_button = CustomButton1("Face Unlock", self)
+            self.qr_unlock_button.setEnabled(True)  # 启用按钮
+        #self.welcome_label = QLabel("Please set the lab!", self)
+        #self.welcome_label.setStyleSheet("font-size: 50px; font-weight: bold;")
+        self.welcome_label.setAlignment(Qt.AlignCenter)  # Center align the text
+        layout.addWidget(self.welcome_label)
+
+        # Add a spacer between label and button
+        layout.addSpacing(20)  # Adds 20px of vertical space between label and button
+
+        # Create a horizontal layout to center the button
+        unlock_button_layout = QVBoxLayout()
+        # Unlock button with rounded corners and adjusted size
+        #self.face_unlock_button.setFixedSize(200, 60)
+        self.qr_unlock_button.setFixedSize(200, 60)
+        # Add the button to the horizontal layout to center it
+        unlock_button_layout.addWidget(self.qr_unlock_button)
+        #unlock_button_layout.addWidget(self.face_unlock_button)
+        unlock_button_layout.setAlignment(Qt.AlignCenter)  # Center the button horizontally
+        # Add the button layout to the main vertical layout
+        layout.addLayout(unlock_button_layout)
+
         # Center the entire layout in the window
         layout.setAlignment(Qt.AlignCenter)
 
@@ -85,18 +83,18 @@ class MainWindow(QMainWindow):
 
         # Button click connection
         self.qr_unlock_button.clicked.connect(self.open_qr_camera_page)
-        self.face_unlock_button.clicked.connect(self.open_face_camera_page)
+        #self.face_unlock_button.clicked.connect(self.open_face_camera_page)
         self.show()
 
     def open_qr_camera_page(self):
-        self.qrcamera_window = QR_CameraWindow(self.picam2,self.lab_id,self.lab_name)
+        self.qrcamera_window = QR_CameraWindow(self.lab_id,self.lab_name)
         self.qrcamera_window.show()
         self.close()
 
-    def open_face_camera_page(self):
-        self.facecamera_window = QR_CameraWindow(self.picam2,self.lab_id,self.lab_name)
-        self.facecamera_window.show()
-        self.close()
+    #def open_face_camera_page(self):
+    #    self.facecamera_window = CameraWindow(self.lab_id,self.lab_name)
+    #    self.facecamera_window.show()
+    #    self.close()
 
 
     def open_settings_page(self):
