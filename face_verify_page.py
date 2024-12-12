@@ -104,6 +104,7 @@ class CameraWindow(QMainWindow):
         self.back_button = QPushButton("Go back to homepage", self)
         self.back_button.setStyleSheet(
             """
+            font-size: 16px;
             text-decoration: underline;
             color: #006d2e;
             border: none; 
@@ -157,8 +158,8 @@ class CameraWindow(QMainWindow):
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             self.frame_counter += 1
 
-            if self.frame_counter >= 25:
-                self.frame_counter = 0
+            if self.frame_counter == 0 or self.frame_counter >= 25:
+                self.frame_counter = 1
                 if not self.task_queue.full():  # Avoid queue overflow
                     print("Adding task to queue")
                     self.task_queue.put((self.lab_id, frame))

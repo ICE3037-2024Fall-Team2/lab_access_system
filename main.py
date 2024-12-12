@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 )
-from custom_button import CustomButton1, CustomButton1_false
+from custom_button import CustomButton1, CustomButton1_false, CustomButton1_trans
 from qr_verify_page import QR_CameraWindow
 from face_verify_page import CameraWindow
 #from stream_page import StreamWindow
@@ -26,11 +26,11 @@ class MainWindow(QMainWindow):
         trans_button_layout = QHBoxLayout()
         trans_button_layout.setSpacing(20)
         # Create a "Exit" button
-        self.exit_button = CustomButton1("Exit", self)
+        self.exit_button = CustomButton1_trans("Exit", self)
         self.exit_button.setFixedSize(200, 60)
         self.exit_button.clicked.connect(self.close_application)  # Connect to settings page
         # Create a "Setting" button
-        self.setting_button = CustomButton1("Setting", self)
+        self.setting_button = CustomButton1_trans("Setting", self)
         self.setting_button.setFixedSize(200, 60)
         self.setting_button.clicked.connect(self.open_settings_page)  # Connect to settings page
         layout.addWidget(self.setting_button)

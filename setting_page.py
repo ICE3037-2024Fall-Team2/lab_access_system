@@ -30,7 +30,7 @@ class LAbSetWindow(QMainWindow):
         self.form_frame.setFixedSize(400,300)
 
         # Title Label
-        self.title_label = QLabel("Admin Login", self.form_frame)
+        self.title_label = QLabel("Lab Setting", self.form_frame)
         self.title_label.setFont(QFont("Arial", 40, QFont.Bold))
         self.title_label.setStyleSheet(" margin-bottom: 10px;")
         self.title_label.setAlignment(Qt.AlignCenter)
@@ -64,6 +64,7 @@ class LAbSetWindow(QMainWindow):
         # Back to Homepage Button
         self.back_button = QPushButton("Go back to homepage", self.main_widget)
         self.back_button.setStyleSheet("""
+            font-size: 16px;
             text-decoration: underline;
             color: #006d2e;
             border: none; 

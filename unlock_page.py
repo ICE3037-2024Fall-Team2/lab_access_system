@@ -35,6 +35,7 @@ class UnlockWindow(QMainWindow):
         # Back to Homepage Button
         self.back_button = QPushButton("Go back to homepage", self.main_widget)
         self.back_button.setStyleSheet("""
+            font-size: 16px;
             text-decoration: underline;
             color: #006d2e;
             border: none; 
