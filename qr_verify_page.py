@@ -121,10 +121,12 @@ class QR_CameraWindow(QMainWindow):
 
         decoded_objects = decode(frame)
         for obj in decoded_objects:
-            points = obj.polygon
-            if len(points) == 4:
-                pts = [tuple(point) for point in points]
-                cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
+            #points = obj.polygon
+            #if len(points) == 4:
+                #pts = [tuple(point) for point in points]
+                #cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
+            (x, y, w, h) = obj.rect
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
             qr_data = obj.data.decode('utf-8')
             if len(qr_data) == 15 and qr_data.isdigit():
                 reservation_id = qr_data
@@ -215,7 +217,7 @@ class QR_CameraWindow(QMainWindow):
         self.timer.stop()
         self.face_window = CameraWindow(self.lab_id,self.lab_name)
         self.face_window.show()
-        self.close()
+        QTimer.singleShot(100, self.close)
 
     def go_back(self):
         from main import MainWindow
