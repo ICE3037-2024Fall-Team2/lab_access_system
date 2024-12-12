@@ -78,7 +78,7 @@ class QR_CameraWindow(QMainWindow):
 
         # Timer for frame updates
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_frame)
+        self.timer.timeout.connect(self.scan_qr_code)
         self.timer.start(30)  # Update every 30ms
 
         # Layout Setup
@@ -103,9 +103,8 @@ class QR_CameraWindow(QMainWindow):
     #    self.face_window.show()
     #    self.close()
 
-    def update_frame(self):
-        frame = self.picam2.capture_array()
-        frame = cv2.flip(frame, 1)
+    def update_frame(self,frame):
+        
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         height, width, channel = frame.shape
         step = channel * width
@@ -115,18 +114,23 @@ class QR_CameraWindow(QMainWindow):
         self.camera_label.setPixmap(q_image)
         self.scan_qr_code(frame)
 
-    def scan_qr_code(self, frame):
+    def scan_qr_code(self):
+        frame = self.picam2.capture_array()
+        frame = cv2.flip(frame, 1)
+
         if self.is_qr_processed:
-            return
+            #return
+            self.update_frame(frame)
 
         decoded_objects = decode(frame)
         for obj in decoded_objects:
-            #points = obj.polygon
-            #if len(points) == 4:
-                #pts = [tuple(point) for point in points]
-                #cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
-            (x, y, w, h) = obj.rect
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+            points = obj.polygon
+            if len(points) == 4:
+                pts = [tuple(point) for point in points]
+                cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
+            #(x, y, w, h) = obj.rect
+            #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+            self.update_frame(frame)
             qr_data = obj.data.decode('utf-8')
             if len(qr_data) == 15 and qr_data.isdigit():
                 reservation_id = qr_data
