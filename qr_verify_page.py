@@ -182,6 +182,11 @@ class QR_CameraWindow(QMainWindow):
 
             if time_diff <= 5:
                 # Step 9: Unlock window and update 'checked' to 1
+                if self.picam2:
+                    self.picam2.stop()
+                    self.picam2.close()
+                    self.picam2 = None
+                self.timer.stop()
                 self.unlock_window = UnlockWindow(self.lab_id, self.lab_id, user_id)
                 self.unlock_window.show()
                 self.close()

@@ -12,6 +12,7 @@ import aiohttp
 import asyncio
 from queue import Queue
 
+
 class Worker(QThread):
     find_signal = pyqtSignal(str)
     error_signal = pyqtSignal(str)
@@ -19,6 +20,7 @@ class Worker(QThread):
     def __init__(self, task_queue):
         super().__init__()
         self.task_queue = task_queue
+        self.is_running = True
 
     async def send_request(self, lab_id, image):
         try:
@@ -27,7 +29,7 @@ class Worker(QThread):
             data = aiohttp.FormData()
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
-            print("start sending")
+
             async with aiohttp.ClientSession() as session:
                 async with session.post('http://localhost:5001/upload_image', data=data) as response:
                     if response.status == 200:
@@ -44,12 +46,14 @@ class Worker(QThread):
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        while True:  # 持续运行
-                if not self.task_queue.empty():
-                    task = self.task_queue.get()
-                    print("there is task test")
-                    lab_id, image = task
-                    loop.run_until_complete(self.send_request(lab_id, image))
+        while self.is_running:
+            if not self.task_queue.empty():
+                task = self.task_queue.get()
+                lab_id, image = task
+                loop.run_until_complete(self.send_request(lab_id, image))
+
+    def stop(self):
+        self.is_running = False
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
@@ -182,45 +186,37 @@ class CameraWindow(QMainWindow):
             self.current_message_box.close()
 
         from unlock_page import UnlockWindow
+        self.cleanup_resources()
         self.unlock_window = UnlockWindow(self.lab_id, self.lab_name, student_id)
         self.unlock_window.show()
         self.close()
 
-    def start_qr_recognition(self):
-        from qr_verify_page import QR_CameraWindow
-        self.timer.stop()
-        if self.worker.isRunning():
-            self.worker.quit()
-            self.worker.wait()
-        if self.picam2:
-            self.picam2.stop()
-            self.picam2.close()
-            self.picam2 = None
-        self.qr_window = QR_CameraWindow(self.lab_id,self.lab_name)
-        self.qr_window.show()
-        self.close()
-
     def go_back(self):
         from main import MainWindow
-        self.timer.stop()
-        if self.worker.isRunning():
-            self.worker.quit()
-            self.worker.wait()
-        if self.picam2:
-            self.picam2.stop()
-            self.picam2.close()
-            self.picam2 = None
+        self.cleanup_resources()
         self.main_window = MainWindow(self.lab_id, self.lab_name)
         self.main_window.show()
         self.close()
 
-    def closeEvent(self, event):
+    def start_qr_recognition(self):
+        from qr_verify_page import QR_CameraWindow
+        self.cleanup_resources()
+        self.qr_window = QR_CameraWindow(self.lab_id, self.lab_name)
+        self.qr_window.show()
+        self.close()
+
+    def cleanup_resources(self):
         self.timer.stop()
+
         if self.worker.isRunning():
-            self.worker.quit()
+            self.worker.stop()
             self.worker.wait()
+
         if self.picam2:
             self.picam2.stop()
             self.picam2.close()
             self.picam2 = None
+
+    def closeEvent(self, event):
+        self.cleanup_resources()
         event.accept()
