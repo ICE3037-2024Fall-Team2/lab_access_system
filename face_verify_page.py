@@ -80,12 +80,6 @@ class CameraWindow(QMainWindow):
         self.timer.timeout.connect(self.detect_and_process_face)
         self.timer.start(30)  # Update every 30ms
 
-    def timerEvent(self):
-        frame = self.picam2.capture_array()
-        if frame is not None:
-            frame = cv2.flip(frame, 1)  # Mirror the frame
-            frame = self.detect_and_process_face(frame)
-            self.display_frame(frame)
 
     def display_frame(self, frame):
         height, width, channel = frame.shape
@@ -98,7 +92,6 @@ class CameraWindow(QMainWindow):
         frame = self.picam2.capture_array()
         if frame is not None:
             frame = cv2.flip(frame, 1)  # Mirror the frame
-            frame = self.detect_and_process_face(frame)
 
 
         gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
