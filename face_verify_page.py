@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QPushButton, QMessageBox, QHBoxLayout, QVBoxLayout, QFrame, QWidget
 )
@@ -10,50 +10,6 @@ import cv2
 import numpy as np
 import aiohttp
 import asyncio
-from queue import Queue
-
-
-class Worker(QThread):
-    find_signal = pyqtSignal(str)
-    error_signal = pyqtSignal(str)
-
-    def __init__(self, task_queue):
-        super().__init__()
-        self.task_queue = task_queue
-        self.is_running = True
-
-    async def send_request(self, lab_id, image):
-        try:
-            _, img_encoded = cv2.imencode('.jpg', image)
-            img_bytes = img_encoded.tobytes()
-            data = aiohttp.FormData()
-            data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
-            data.add_field('lab_id', lab_id)
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post('http://localhost:5001/upload_image', data=data) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        if response_data.get('verified') and response_data.get('student_id'):
-                            self.find_signal.emit(response_data['student_id'])
-                        else:
-                            self.error_signal.emit(response_data.get('message', 'Verification failed'))
-                    else:
-                        self.error_signal.emit(f"Request failed with status code {response.status}")
-        except Exception as e:
-            self.error_signal.emit(f"Error occurred: {str(e)}")
-
-    def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        while self.is_running:
-            if not self.task_queue.empty():
-                task = self.task_queue.get()
-                lab_id, image = task
-                loop.run_until_complete(self.send_request(lab_id, image))
-
-    def stop(self):
-        self.is_running = False
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
@@ -65,12 +21,11 @@ class CameraWindow(QMainWindow):
         self.lab_name = lab_name
         self.is_popup_open = False
         self.current_message_box = None
-        self.frame_counter = 0
-        self.task_queue = Queue(maxsize=10)
+        self.is_request = False  # Tracks if a request is in progress
 
         # Initialize Picamera2
         self.picam2 = Picamera2()
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888", "size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
 
@@ -80,9 +35,6 @@ class CameraWindow(QMainWindow):
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
-
-        #self.welcome_label = QLabel("Please show your QR-code", self)
-        #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
 
         self.camera_label = QLabel(self)
         self.camera_label.setStyleSheet("border: 1px solid black;")
@@ -119,21 +71,14 @@ class CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
-        #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
 
         # Timer to capture frames and process in main thread
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.timerEvent)
+        self.timer.timeout.connect(self.detect_and_process_face)
         self.timer.start(30)  # Update every 30ms
-
-        # Initialize worker thread
-        self.worker = Worker(self.task_queue)
-        self.worker.find_signal.connect(self.find_message)
-        self.worker.error_signal.connect(self.show_error_message)
-        self.worker.start()
 
     def timerEvent(self):
         frame = self.picam2.capture_array()
@@ -149,23 +94,48 @@ class CameraWindow(QMainWindow):
         pixmap = QPixmap.fromImage(q_image)
         self.camera_label.setPixmap(pixmap)
 
-    def detect_and_process_face(self, frame):
+    def detect_and_process_face(self):
+        frame = self.picam2.capture_array()
+        if frame is not None:
+            frame = cv2.flip(frame, 1)  # Mirror the frame
+            frame = self.detect_and_process_face(frame)
+
+
         gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         if len(faces) > 0:
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            self.frame_counter += 1
 
-            if self.frame_counter == 0 or self.frame_counter >= 25:
-                self.frame_counter = 1
-                if not self.task_queue.full():  # Avoid queue overflow
-                    print("Adding task to queue")
-                    self.task_queue.put((self.lab_id, frame))
-                    print("Task added to queue")
+                if(self.is_request == False):
+                    self.is_request = True
+                    asyncio.create_task(self.send_request(self.lab_id, frame))
 
-        return frame
+        self.display_frame(frame)
+
+    async def send_request(self, lab_id, image):
+        try:
+            _, img_encoded = cv2.imencode('.jpg', image)
+            img_bytes = img_encoded.tobytes()
+            data = aiohttp.FormData()
+            data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
+            data.add_field('lab_id', lab_id)
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post('http://localhost:5001/upload_image', data=data) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        if response_data.get('verified') and response_data.get('student_id'):
+                            self.find_message(response_data['student_id'])
+                        else:
+                            self.show_error_message(response_data.get('message', 'Verification failed'))
+                    else:
+                        self.show_error_message(f"Request failed with status code {response.status}")
+        except Exception as e:
+            self.show_error_message(f"Error occurred: {str(e)}")
+        finally:
+            self.is_request = False  # Reset flag after request completion
 
     def show_error_message(self, message):
         if not self.is_popup_open:
@@ -208,10 +178,6 @@ class CameraWindow(QMainWindow):
 
     def cleanup_resources(self):
         self.timer.stop()
-
-        if self.worker.isRunning():
-            self.worker.stop()
-            self.worker.wait()
 
         if self.picam2:
             self.picam2.stop()
