@@ -1,5 +1,7 @@
 # Lab Access System
 
+This project is part of our Capstone Design Project for Sungkyunkwan University.
+
 ## Overview
 The **Lab Access System** is a Raspberry Pi-based solution for secure lab entry. It uses facial recognition and QR codes to validate student reservations, ensuring secure and seamless access during their reserved times.
 
