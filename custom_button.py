@@ -5,7 +5,6 @@ class CustomButton1_trans(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
         
-        # 初始样式
         self.setStyleSheet('''
             background: white;
             color: white;
@@ -39,7 +38,6 @@ class CustomButton1(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
         
-        # 初始样式
         self.setStyleSheet('''
             background: #009846;
             color: white;
