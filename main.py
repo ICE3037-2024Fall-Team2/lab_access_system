@@ -47,21 +47,21 @@ class MainWindow(QMainWindow):
             self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
             self.qr_unlock_button = CustomButton1_false("Unlock", self)
             #self.face_unlock_button = CustomButton1_false("Face Unlock", self)
-            self.qr_unlock_button.setEnabled(False)  # 禁用按钮
+            self.qr_unlock_button.setEnabled(False)  
         else:
             self.welcome_label = QLabel(f"Welcome to <br>{self.lab_name}!", self)
             
             self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
             self.qr_unlock_button = CustomButton1("Unlock", self)
             #self.face_unlock_button = CustomButton1("Face Unlock", self)
-            self.qr_unlock_button.setEnabled(True)  # 启用按钮
+            self.qr_unlock_button.setEnabled(True)  
         #self.welcome_label = QLabel("Please set the lab!", self)
         #self.welcome_label.setStyleSheet("font-size: 50px; font-weight: bold;")
         self.welcome_label.setAlignment(Qt.AlignCenter)  # Center align the text
         layout.addWidget(self.welcome_label)
 
         # Add a spacer between label and button
-        layout.addSpacing(20)  # Adds 20px of vertical space between label and button
+        layout.addSpacing(20) 
 
         # Create a horizontal layout to center the button
         unlock_button_layout = QVBoxLayout()
