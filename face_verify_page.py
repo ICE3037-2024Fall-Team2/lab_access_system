@@ -19,7 +19,7 @@ class Worker(QThread):
     def __init__(self):
         super().__init__()
         self.is_running = False
-        self.loop = asyncio.new_event_loop()  # 创建单一事件循环
+        self.loop = asyncio.new_event_loop()
 
     async def send_request(self, lab_id, image):
         self.is_running = True
