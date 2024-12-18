@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame, QDialog, QGridLayout
+    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox, QWidget, QFrame, QDialog, QGridLayout
 )
 
 from PyQt5.QtGui import QFont
@@ -14,8 +14,6 @@ class NumericInputPopup(QDialog):
         self.setWindowFlags(self.windowFlags() | Qt.Tool) 
         self.setFixedSize(400, 300)
         self.input_value = ""
-
-        grid_layout = QGridLayout()
 
         # Horizontal layout for buttons
         button_layout = QHBoxLayout()
