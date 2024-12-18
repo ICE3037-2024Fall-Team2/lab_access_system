@@ -12,6 +12,10 @@ import aiohttp
 import asyncio
 from queue import Queue
 import pymysql
+from config import DB_CONFIG
+
+
+db_config = DB_CONFIG
 
 class Worker(QThread):
     find_signal = pyqtSignal(str)  # Signal for successful verification with student ID
@@ -76,6 +80,8 @@ class CameraWindow(QMainWindow):
         self.is_popup_open = False
         self.current_message_box = None
         self.initial_wait_done = False  # Track if the 3-second initial wait is over
+        self.processing_request = False  # Track if a request is being processed
+
         self.db_connection = self.open_database_connection()
 
 
@@ -84,7 +90,7 @@ class CameraWindow(QMainWindow):
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
-        QTimer.singleShot(3000, self.enable_face_detection)
+        QTimer.singleShot(2000, self.enable_face_detection)
 
         # Load Haar Cascade for face detection
         self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
@@ -95,7 +101,7 @@ class CameraWindow(QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         # Status label
-        self.status_label = QLabel("Please show your face", self.main_widget)
+        self.status_label = QLabel("Initializing camera...", self.main_widget)
         self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: blue;")
         self.status_label.setAlignment(Qt.AlignCenter)
 
@@ -156,12 +162,7 @@ class CameraWindow(QMainWindow):
         
     def open_database_connection(self):
         try:
-            connection = pymysql.connect(
-                host="YOUR_DB_HOST",
-                user="YOUR_DB_USER",
-                password="YOUR_DB_PASSWORD",
-                database="YOUR_DB_NAME"
-            )
+            connection = pymysql.connect(**dbconfig)
             print("Database connection established")
             return connection
         except Exception as e:
@@ -177,7 +178,7 @@ class CameraWindow(QMainWindow):
         frame = self.picam2.capture_array()
         if frame is not None:
             frame = cv2.flip(frame, 1)  # Mirror the frame
-            if self.initial_wait_done:  # Process frames only after the initial wait
+            if self.initial_wait_done and not self.processing_request: 
                 frame = self.detect_and_process_face(frame)
             self.display_frame(frame)
 
@@ -198,9 +199,15 @@ class CameraWindow(QMainWindow):
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            self.worker.run_task(self.lab_id, frame)
+            #self.worker.run_task(self.lab_id, frame)
+            QTimer.singleShot(2000, lambda: self.send_request_to_worker(frame))
 
         return frame
+    
+    def send_request_to_worker(self, frame):
+        if not self.processing_request:  # Ensure only one request is processed at a time
+            self.processing_request = True
+            self.worker.run_task(self.lab_id, frame)
 
     def show_error_message(self, message):
         #self.status_label.setText("Please show your face") 
@@ -214,16 +221,17 @@ class CameraWindow(QMainWindow):
             self.current_message_box.setStandardButtons(QMessageBox.Ok)
             self.current_message_box.finished.connect(self.error_popup_wait)
             self.current_message_box.show()
-            self.status_label.setText("Error")
+            self.status_label.setText("Error occured!")
             
         self.status_label.setText("Please show your face")  
 
     def error_popup_wait(self):
-        QTimer.singleShot(3000, self.reset_popup_status)
+        QTimer.singleShot(2000, self.reset_popup_status)
 
     def reset_popup_status(self):
         self.is_popup_open = False
         self.current_message_box = None
+        self.processing_request = False 
 
     def find_message(self, student_id):
         self.status_label.setText("Student identified. Verifying...")
