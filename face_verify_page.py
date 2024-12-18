@@ -53,17 +53,17 @@ class Worker(QThread):
         """Start the asynchronous request."""
         asyncio.run(self.send_request(lab_id, image))  # Runs the coroutine in the current thread
 
-    def run(self):
-        """Start the event loop in this thread."""
-        try:
-            self.loop.run_forever()  # Keep the loop running
-        except RuntimeError as e:
-            print(f"RuntimeError in Worker run: {e}")
+    #def run(self):
+    #    """Start the event loop in this thread."""
+    #    try:
+    #        self.loop.run_forever()  # Keep the loop running
+    #    except RuntimeError as e:
+    #        print(f"RuntimeError in Worker run: {e}")
 
-    def stop(self):
-        """Stop the event loop."""
-        if self.loop.is_running():
-            self.loop.stop()
+    #def stop(self):
+    #    """Stop the event loop."""
+    #    if self.loop.is_running():
+    #        self.loop.stop()
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
@@ -75,9 +75,7 @@ class CameraWindow(QMainWindow):
         self.lab_name = lab_name
         self.is_popup_open = False
         self.current_message_box = None
-        self.frame_counter = 0  # Add frame counter
-        self.frame_skip = 25  # Send request every 25 frames
-
+        self.initial_wait_done = False  # Track if the 3-second initial wait is over
         self.db_connection = self.open_database_connection()
 
 
@@ -86,6 +84,7 @@ class CameraWindow(QMainWindow):
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
+        QTimer.singleShot(3000, self.enable_face_detection)
 
         # Load Haar Cascade for face detection
         self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
@@ -151,6 +150,10 @@ class CameraWindow(QMainWindow):
         self.worker.error_signal.connect(self.show_error_message)
         self.worker.start()
 
+    def enable_face_detection(self):
+        self.initial_wait_done = True
+        self.status_label.setText("Please show your face")
+        
     def open_database_connection(self):
         try:
             connection = pymysql.connect(
@@ -174,7 +177,8 @@ class CameraWindow(QMainWindow):
         frame = self.picam2.capture_array()
         if frame is not None:
             frame = cv2.flip(frame, 1)  # Mirror the frame
-            frame = self.detect_and_process_face(frame)
+            if self.initial_wait_done:  # Process frames only after the initial wait
+                frame = self.detect_and_process_face(frame)
             self.display_frame(frame)
 
     def display_frame(self, frame):
@@ -194,18 +198,12 @@ class CameraWindow(QMainWindow):
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            #self.frame_counter += 1
-            #self.worker.run_task(self.lab_id, frame)
-
-            # Send a request every n frames
-            #if self.frame_counter >= self.frame_skip and not self.worker.is_running:
             self.worker.run_task(self.lab_id, frame)
-                #self.frame_counter = 0 
 
         return frame
 
     def show_error_message(self, message):
-        self.status_label.setText("Please show your face") 
+        #self.status_label.setText("Please show your face") 
 
         if not self.is_popup_open:
             self.is_popup_open = True
@@ -214,8 +212,14 @@ class CameraWindow(QMainWindow):
             self.current_message_box.setWindowTitle("Error")
             self.current_message_box.setText(message)
             self.current_message_box.setStandardButtons(QMessageBox.Ok)
-            self.current_message_box.finished.connect(self.reset_popup_status)
+            self.current_message_box.finished.connect(self.error_popup_wait)
             self.current_message_box.show()
+            self.status_label.setText("Error")
+            
+        self.status_label.setText("Please show your face")  
+
+    def error_popup_wait(self):
+        QTimer.singleShot(3000, self.reset_popup_status)
 
     def reset_popup_status(self):
         self.is_popup_open = False
