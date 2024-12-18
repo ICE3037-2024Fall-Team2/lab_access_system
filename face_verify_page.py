@@ -26,16 +26,21 @@ class Worker(QThread):
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
-            data = aiohttp.FormData()
+            #data = aiohttp.FormData()
+            data = aiohttp.FormData(quote_fields=False)
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
             #debug
             print(f"Sending lab_id: {lab_id}, Image size: {len(img_bytes)}")
+            print(f"Form data being sent: {data}")
+
 
             async with aiohttp.ClientSession() as session:
                 async with session.post('http://localhost:5001/upload_image', data=data) as response:
                     if response.status == 200:
                         response_data = await response.json()
+                        print(f"Response received: {response_data}")
+
                         if response_data.get('verified') and response_data.get('student_id'):
                             self.find_signal.emit(response_data['student_id'])
                         else:
