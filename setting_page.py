@@ -1,10 +1,63 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame
+    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame, QDialog, QGridLayout
 )
-from PyQt5.QtGui import QFont, QGuiApplication
+
+from PyQt5.QtGui import QFont
 from aws_connect import connect_to_rds 
 from custom_button import CustomButton2
+
+class NumericInputPopup(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Numeric Input")
+        self.setFixedSize(300, 400)
+        self.input_value = ""
+
+        grid_layout = QGridLayout()
+
+        # Add buttons 0-9
+        for i in range(1, 10):
+            button = QPushButton(str(i))
+            button.setFixedSize(60, 60)
+            button.clicked.connect(self.number)
+            grid_layout.addWidget(button, (i - 1) // 3, (i - 1) % 3)
+
+        # Add 0 button
+        button_zero = QPushButton("0")
+        button_zero.setFixedSize(60, 60)
+        button_zero.clicked.connect(self.number)
+        grid_layout.addWidget(button_zero, 3, 1)
+
+        # Add Backspace button
+        backspace_button = QPushButton("←")
+        backspace_button.setFixedSize(60, 60)
+        backspace_button.clicked.connect(self.backspace)
+        grid_layout.addWidget(backspace_button, 3, 0)
+
+        # Add Close button
+        close_button = QPushButton("Close")
+        close_button.setFixedSize(60, 60)
+        close_button.clicked.connect(self.close)
+        grid_layout.addWidget(close_button, 3, 2)
+
+        # Main Layout
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(grid_layout)
+        self.setLayout(main_layout)
+
+    def number(self):
+        # Append the clicked number to the input value
+        button = self.sender()
+        self.input_value += button.text()
+
+    def backspace(self):
+        # Remove the last character from the input value
+        self.input_value = self.input_value[:-1]
+
+    def get_value(self):
+        return self.input_value
+
 
 class LAbSetWindow(QMainWindow):
     def __init__(self, lab_id=None, lab_name=None):
@@ -41,9 +94,9 @@ class LAbSetWindow(QMainWindow):
         self.lab_input = QLineEdit(self.form_frame)
         self.lab_input.setPlaceholderText("Enter Lab ID")
         self.lab_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 5px;")
-        #fullscreen + virtkeyboard
-        self.lab_input.setFocusPolicy(Qt.StrongFocus)
-        self.lab_input.focusInEvent = lambda event: QGuiApplication.inputMethod().show()
+        #num input diag
+        #self.lab_input.setReadOnly(True)
+        self.lab_input.mousePressEvent = self.open_numeric_popup
 
 
         # Admin ID Input
@@ -52,17 +105,10 @@ class LAbSetWindow(QMainWindow):
         self.id_input = QLineEdit(self.form_frame)
         self.id_input.setPlaceholderText("Enter Admin ID")
         self.id_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 15px;")
-        #fullscreen + virtkeboard
-        self.id_input.setFocusPolicy(Qt.StrongFocus)
-        self.id_input.focusInEvent = lambda event: QGuiApplication.inputMethod().show()
+        #num input diag
+        #self.id_input.setReadOnly(True)
+        self.id_input.mousePressEvent = self.open_numeric_popup
 
-        # Password Input
-        #self.pass_label = QLabel("Password:", self.form_frame)
-        #self.pass_label.setStyleSheet("font-size: 16px; color: white; margin-bottom: 5px;padding: 5px;")
-        #self.pass_input = QLineEdit(self.form_frame)
-        #self.pass_input.setPlaceholderText("Enter Password")
-        #self.pass_input.setEchoMode(QLineEdit.Password)
-        #self.pass_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 20px;")
 
         # Login Button
         self.login_button = CustomButton2("Set", self.form_frame)
@@ -95,6 +141,13 @@ class LAbSetWindow(QMainWindow):
         main_layout.addWidget(self.title_label)
         main_layout.addWidget(self.form_frame, alignment=Qt.AlignCenter)
         main_layout.addWidget(self.back_button, alignment=Qt.AlignCenter)
+
+        
+    def open_numeric_popup(self, event):
+        sender = self.sender()  # Determine which input field triggered the popup
+        popup = NumericInputPopup(self)
+        if popup.exec_() == QDialog.Accepted:
+            sender.setText(popup.get_value())
 
     def handle_login(self):
         lab_id = self.lab_input.text().strip() 
