@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         self.qrcamera_window = QR_CameraWindow(self.lab_id,self.lab_name)
         self.qrcamera_window.show()
         #self.close()
-        QTimer.singleShot(80, self.clone)
+        QTimer.singleShot(80, self.close)
 
     #def open_face_camera_page(self):
     #    self.facecamera_window = CameraWindow(self.lab_id,self.lab_name)

@@ -10,7 +10,7 @@ class CustomButton1_trans(QPushButton):
             color: white;
             font-size: 20px;
             border-radius: 8px;
-            
+            outline: none;
             cursor: pointer;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
