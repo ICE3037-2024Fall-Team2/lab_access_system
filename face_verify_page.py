@@ -11,6 +11,7 @@ import numpy as np
 import aiohttp
 import asyncio
 from queue import Queue
+import pymysql
 
 class Worker(QThread):
     find_signal = pyqtSignal(str)  # Signal for successful verification with student ID
@@ -19,6 +20,8 @@ class Worker(QThread):
     def __init__(self):
         super().__init__()
         self.loop = asyncio.get_event_loop()  # Use the current event loop if available
+        self.db_connection = db_connection  # Reuse the provided database connection
+
 
     async def send_request(self, lab_id, image):
         """Asynchronous function to send the request."""
@@ -146,6 +149,26 @@ class CameraWindow(QMainWindow):
         self.worker.error_signal.connect(self.show_error_message)
         self.worker.start()
 
+    def open_database_connection(self):
+        try:
+            connection = pymysql.connect(
+                host="YOUR_DB_HOST",
+                user="YOUR_DB_USER",
+                password="YOUR_DB_PASSWORD",
+                database="YOUR_DB_NAME"
+            )
+            print("Database connection established")
+            return connection
+        except Exception as e:
+            print(f"Error opening database connection: {e}")
+            return None
+
+    def close_database_connection(self):
+        """Close the persistent database connection."""
+        if self.db_connection:
+            self.db_connection.close()
+            print("Database connection closed")
+            
     def timerEvent(self):
         frame = self.picam2.capture_array()
         if frame is not None:
@@ -234,6 +257,9 @@ class CameraWindow(QMainWindow):
             self.picam2.stop()
             self.picam2.close()
             self.picam2 = None
+
+        self.close_database_connection()
+
 
     def closeEvent(self, event):
         self.cleanup_resources()
