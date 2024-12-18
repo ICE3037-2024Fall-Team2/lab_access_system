@@ -57,17 +57,17 @@ class Worker(QThread):
         """Start the asynchronous request."""
         asyncio.run(self.send_request(lab_id, image))  # Runs the coroutine in the current thread
 
-    #def run(self):
-    #    """Start the event loop in this thread."""
-    #    try:
-    #        self.loop.run_forever()  # Keep the loop running
-    #    except RuntimeError as e:
-    #        print(f"RuntimeError in Worker run: {e}")
+    def run(self):
+        """Start the event loop in this thread."""
+        try:
+            self.loop.run_forever()  # Keep the loop running
+        except RuntimeError as e:
+            print(f"RuntimeError in Worker run: {e}")
 
-    #def stop(self):
-    #    """Stop the event loop."""
-    #    if self.loop.is_running():
-    #        self.loop.stop()
+    def stop(self):
+        """Stop the event loop."""
+        if self.loop.is_running():
+            self.loop.stop()
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
