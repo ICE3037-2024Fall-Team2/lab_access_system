@@ -27,7 +27,7 @@ class Worker(QThread):
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
             #data = aiohttp.FormData()
-            data = aiohttp.FormData(quote_fields=False)
+            data = aiohttp.FormData()
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
             #debug

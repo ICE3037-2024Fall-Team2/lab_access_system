@@ -49,33 +49,40 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
 
 def parse_from_request(request):
     """Parse image from form-data request."""
-    file = request.files.get('image')
-    if not file or file.filename == '':
-        raise ValueError("No file part in form-data request")
+    try:
+        # Get image file from the form-data
+        file = request.files.get('image')
+        if not file or file.filename == '':
+            raise ValueError("No file part in form-data request")
 
-    image_data = file.read()
+        image_data = file.read()
 
-    # Get lab_id from form-data
-    lab_id = request.form.get('lab_id')
-    if not lab_id:
-        raise ValueError("Missing 'lab_id' in form-data request")
+        # Get lab_id from form-data
+        lab_id = request.form.get('lab_id')
+        if not lab_id:
+            raise ValueError("Missing 'lab_id' in form-data request")
 
-    # Convert image data to numpy array
-    np_arr = np.frombuffer(image_data, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        # Convert image data to numpy array
+        np_arr = np.frombuffer(image_data, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    if img is None:
-        raise ValueError("Failed to decode image")
+        if img is None:
+            raise ValueError("Failed to decode image")
 
-    return img, lab_id
+        return img, lab_id
+    except Exception as e:
+        print(f"Error parsing request: {str(e)}")
+        raise
+
 
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     try:
         #debug
-        app.logger.info("Received request")
-        app.logger.info(f"Lab ID: {lab_id}, Image shape: {img.shape if img is not None else 'None'}")
+        print("Received request")
+        print(f"Request form data: {request.form}")
+        print(f"Request files: {request.files}")
 
         img, lab_id = parse_from_request(request)
         print(f"Parsed lab_id: {lab_id}, Image shape: {img.shape if img is not None else 'None'}")
@@ -162,6 +169,7 @@ def upload_image():
         return jsonify({"verified": False, "message": "No matching student found"})
 
     except ValueError as e:
+        app.logger.error(f"ValueError: {e}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         app.logger.error(f"Unexpected error: {e}")
