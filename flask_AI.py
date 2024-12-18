@@ -90,21 +90,24 @@ def upload_image():
         mirrored_img = cv2.flip(img, 1)
         
         # Connect to RDS and fetch students
-        with pymysql.connect(**db_config) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT id, photo_path FROM user_img")
-                students = cursor.fetchall()
+        try:
+            with pymysql.connect(**db_config) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT id, photo_path FROM user_img")
+                    students = cursor.fetchall()
 
-                # Query reservations for today
-                today_date = datetime.date.today()
-                cursor.execute("""
-                    SELECT user_id, reservation_id, date, time FROM reservations
-                    WHERE lab_id = %s AND date = %s AND verified = 1
-                """, (lab_id, today_date))
-                reservations = cursor.fetchall()
+                    # Query reservations for today
+                    today_date = datetime.date.today()
+                    cursor.execute("""
+                        SELECT user_id, reservation_id, date, time FROM reservations
+                        WHERE lab_id = %s AND date = %s AND verified = 1
+                    """, (lab_id, today_date))
+                    reservations = cursor.fetchall()
 
-                if not reservations:
-                    return jsonify({"verified": False, "message": "No reservation for this lab today"})
+                    if not reservations:
+                        return jsonify({"verified": False, "message": "No reservation for this lab today"})
+        except pymysql.MySQLError as e:
+            print(f"Error: {e}")
 
         # Image verification
         matched_student_id = None
