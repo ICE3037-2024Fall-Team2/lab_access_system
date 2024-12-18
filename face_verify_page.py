@@ -13,25 +13,23 @@ import asyncio
 from queue import Queue
 
 class Worker(QThread):
-    find_signal = pyqtSignal(str)
-    error_signal = pyqtSignal(str)
+    find_signal = pyqtSignal(str)  # Signal for successful verification with student ID
+    error_signal = pyqtSignal(str)  # Signal for errors or verification failures
 
     def __init__(self):
         super().__init__()
-        self.is_running = False
-        self.loop = asyncio.new_event_loop()
+        self.loop = asyncio.get_event_loop()  # Use the current event loop if available
 
     async def send_request(self, lab_id, image):
-        self.is_running = True
+        """Asynchronous function to send the request."""
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
             data = aiohttp.FormData()
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
-            #debug
-            print(f"Sending request with lab_id: {lab_id}, Image size: {len(img_bytes)}")
 
+            print(f"Sending request with lab_id: {lab_id}, Image size: {len(img_bytes)}")
 
             async with aiohttp.ClientSession() as session:
                 async with session.post('http://localhost:5000/upload_image', data=data) as response:
@@ -47,23 +45,22 @@ class Worker(QThread):
                         self.error_signal.emit(f"Request failed with status code {response.status}")
         except Exception as e:
             self.error_signal.emit(f"Error occurred: {str(e)}")
-        finally:
-            self.is_running = False
 
     def run_task(self, lab_id, image):
-        if not self.is_running:  
-            #asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
-            asyncio.run_coroutine_threadsafe(asyncio.create_task(self.send_request(lab_id, image)), self.loop)
-
+        """Start the asynchronous request."""
+        asyncio.run(self.send_request(lab_id, image))  # Runs the coroutine in the current thread
 
     def run(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        """Start the event loop in this thread."""
+        try:
+            self.loop.run_forever()  # Keep the loop running
+        except RuntimeError as e:
+            print(f"RuntimeError in Worker run: {e}")
 
     def stop(self):
-        self.is_running = False
-        self.loop.call_soon_threadsafe(self.loop.stop)
-
+        """Stop the event loop."""
+        if self.loop.is_running():
+            self.loop.stop()
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
