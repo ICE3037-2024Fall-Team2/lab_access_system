@@ -77,31 +77,30 @@ class LAbSetWindow(QMainWindow):
             (2, 0), (2, 1), (2, 2)
         ]
         
-        for idx, pos in enumerate(positions, start=1):
+        for idx, (row, col) in enumerate(positions, start=1):  # Unpack row and column
             button = QPushButton(str(idx))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.keypad_input)
-            row, col = pos  # Unpack position into row and column
-            self.keypad_layout.addWidget(button, row, col)
+            self.keypad_layout.addWidget(button, row, col)  # Pass row and column as arguments
             self.keypad_buttons.append(button)
 
         # Add 0 button
         button_zero = QPushButton("0")
         button_zero.setFixedSize(60, 60)
         button_zero.clicked.connect(self.keypad_input)
-        self.keypad_layout.addWidget(button_zero, 3, 1)  # Place 0 in the middle of the 4th row
+        self.keypad_layout.addWidget(button_zero, 3, 1)
 
         # Add Backspace Button
         backspace_button = QPushButton("←")
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
-        self.keypad_layout.addWidget(backspace_button, 3, 0)  # Place Backspace on the left of 4th row
+        self.keypad_layout.addWidget(backspace_button, 3, 0)
 
         # Add Close Keypad Button
         close_button = QPushButton("Close")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
-        self.keypad_layout.addWidget(close_button, 3, 2)  # Place Close on the right of 4th row
+        self.keypad_layout.addWidget(close_button, 3, 2)
 
         self.keypad_frame.setLayout(self.keypad_layout)
         self.keypad_frame.hide()
