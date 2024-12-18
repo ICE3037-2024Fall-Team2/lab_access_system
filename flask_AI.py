@@ -8,6 +8,7 @@ import datetime
 import requests
 from botocore.exceptions import ClientError
 from flask_cors import CORS
+from config import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME, S3_BUCKET_NAME, DB_CONFIG
 
 app = Flask(__name__)
 CORS(app)
@@ -16,6 +17,18 @@ CORS(app)
 model_name = "ArcFace"
 model = DeepFace.build_model(model_name)
 
+# S3 client
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=AWS_REGION_NAME
+)
+
+bucket_name = S3_BUCKET_NAME
+
+# Database configuration
+db_config = DB_CONFIG
 
 # Matching threshold
 threshold = 0.68
