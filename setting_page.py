@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame
 )
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QGuiApplication
 from aws_connect import connect_to_rds 
 from custom_button import CustomButton2
 
@@ -36,18 +36,25 @@ class LAbSetWindow(QMainWindow):
         self.title_label.setAlignment(Qt.AlignCenter)
 
         # Lab ID Input
-        self.lab_label = QLabel("Lab ID:", self.form_frame)
+        self.lab_label = QLabel("Enter Lab ID:", self.form_frame)
         self.lab_label.setStyleSheet("font-size: 16px; color: white; margin-bottom: 2px; padding: 5px;")
         self.lab_input = QLineEdit(self.form_frame)
         self.lab_input.setPlaceholderText("Enter Lab ID")
         self.lab_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 5px;")
+        #fullscreen + virtkeyboard
+        self.lab_input.setFocusPolicy(Qt.StrongFocus)
+        self.lab_input.focusInEvent = lambda event: QGuiApplication.inputMethod().show()
+
 
         # Admin ID Input
-        self.id_label = QLabel("Admin ID:", self.form_frame)
+        self.id_label = QLabel("Enter Admin ID:", self.form_frame)
         self.id_label.setStyleSheet("font-size: 16px; color: white; margin-bottom: 2px; padding: 5px;")
         self.id_input = QLineEdit(self.form_frame)
         self.id_input.setPlaceholderText("Enter Admin ID")
         self.id_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 15px;")
+        #fullscreen + virtkeboard
+        self.id_input.setFocusPolicy(Qt.StrongFocus)
+        self.id_input.focusInEvent = lambda event: QGuiApplication.inputMethod().show()
 
         # Password Input
         #self.pass_label = QLabel("Password:", self.form_frame)
