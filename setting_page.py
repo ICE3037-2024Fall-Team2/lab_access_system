@@ -137,22 +137,23 @@ class LAbSetWindow(QMainWindow):
 
     def hide_numeric_keypad(self):
         self.keypad_frame.hide()
+        self.active_input = None
 
     def show_numeric_keypad(self, event):
-        sender = self.sender()
-        if isinstance(sender, QLineEdit):  # Ensure sender is a QLineEdit
-            self.active_input = sender
-            sender.setFocus()  # Manually set focus to the QLineEdit
+        sender = self.sender() 
+        if isinstance(sender, QLineEdit): 
+            self.active_input = sender  
+            self.active_input.setFocus() 
             self.keypad_frame.show()
 
     def keypad_input(self):
-        button = self.sender()
-        if hasattr(self, "active_input") and self.active_input.hasFocus():
+        button = self.sender()  
+        if hasattr(self, "active_input") and self.active_input: 
             current_text = self.active_input.text()
             self.active_input.setText(current_text + button.text())
 
     def keypad_backspace(self):
-        if hasattr(self, "active_input"):
+        if hasattr(self, "active_input") and self.active_input:
             current_text = self.active_input.text()
             self.active_input.setText(current_text[:-1])
             
