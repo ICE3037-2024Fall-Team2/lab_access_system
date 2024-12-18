@@ -18,11 +18,11 @@ class Worker(QThread):
 
     def __init__(self):
         super().__init__()
-        self.is_running = False
+        #self.is_running = False
         self.loop = asyncio.new_event_loop()
 
     async def send_request(self, lab_id, image):
-        self.is_running = True
+        #self.is_running = True
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
@@ -36,7 +36,7 @@ class Worker(QThread):
 
 
             async with aiohttp.ClientSession() as session:
-                async with session.post('http://localhost:5001/upload_image', data=data) as response:
+                async with session.post('http://localhost:5000/upload_image', data=data) as response:
                     if response.status == 200:
                         response_data = await response.json()
                         print(f"Response received: {response_data}")
@@ -49,19 +49,19 @@ class Worker(QThread):
                         self.error_signal.emit(f"Request failed with status code {response.status}")
         except Exception as e:
             self.error_signal.emit(f"Error occurred: {str(e)}")
-        finally:
-            self.is_running = False
+        #finally:
+            #self.is_running = False
 
     def run_task(self, lab_id, image):
-        if not self.is_running:  
-            asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
+        #if not self.is_running:  
+        asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
 
     def run(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
     def stop(self):
-        self.is_running = False
+        #self.is_running = False
         self.loop.call_soon_threadsafe(self.loop.stop)
 
 
@@ -173,13 +173,13 @@ class CameraWindow(QMainWindow):
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            #self.frame_counter += 1
-            self.worker.run_task(self.lab_id, frame)
+            self.frame_counter += 1
+            #self.worker.run_task(self.lab_id, frame)
 
             # Send a request every n frames
-            #if self.frame_counter >= self.frame_skip:
-                #self.worker.run_task(self.lab_id, frame)
-                #self.frame_counter = 0 
+            if self.frame_counter >= self.frame_skip:
+                self.worker.run_task(self.lab_id, frame)
+                self.frame_counter = 0 
 
         return frame
 
