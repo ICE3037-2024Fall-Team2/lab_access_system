@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFrame, QHBoxLayout
+    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QGridLayout, QMessageBox, QWidget, QFrame, QHBoxLayout
 )
 
 from PyQt5.QtGui import QFont
@@ -69,31 +69,40 @@ class LAbSetWindow(QMainWindow):
             border-radius: 10px;
             padding: 10px;
         """)
-        self.keypad_layout = QHBoxLayout()
+        self.keypad_layout = QGridLayout()
         self.keypad_buttons = []
 
-        button_1 = QPushButton("1")
-        button_1.setFixedSize(60, 60)
-        button_1.clicked.connect(self.keypad_input)
-        self.keypad_layout.addWidget(button_1, 0, 0)
+        # Create buttons for numbers 1-9 in a grid format
+        positions = [
+            (0, 0), (0, 1), (0, 2),  # Row 0: 1, 2, 3
+            (1, 0), (1, 1), (1, 2),  # Row 1: 4, 5, 6
+            (2, 0), (2, 1), (2, 2)   # Row 2: 7, 8, 9
+        ]
+
+        for idx, (row, col) in enumerate(positions, start=1):
+            button = QPushButton(str(idx))
+            button.setFixedSize(60, 60)
+            button.clicked.connect(self.keypad_input)
+            self.keypad_layout.addWidget(button, row, col, alignment=Qt.AlignCenter)  # Align buttons in the grid
+            self.keypad_buttons.append(button)
 
         # Add 0 button
         button_zero = QPushButton("0")
         button_zero.setFixedSize(60, 60)
         button_zero.clicked.connect(self.keypad_input)
-        self.keypad_layout.addWidget(button_zero, 3, 1)
+        self.keypad_layout.addWidget(button_zero, 3, 1, alignment=Qt.AlignCenter)  # Place 0 in the middle of the 4th row
 
         # Add Backspace Button
         backspace_button = QPushButton("←")
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
-        self.keypad_layout.addWidget(backspace_button, 3, 0)
+        self.keypad_layout.addWidget(backspace_button, 3, 0, alignment=Qt.AlignCenter)  # Place Backspace on the left of 4th row
 
         # Add Close Keypad Button
         close_button = QPushButton("Close")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
-        self.keypad_layout.addWidget(close_button, 3, 2)
+        self.keypad_layout.addWidget(close_button, 3, 2, alignment=Qt.AlignCenter)  # Place Close on the right of 4th row
 
         self.keypad_frame.setLayout(self.keypad_layout)
         self.keypad_frame.hide()
