@@ -17,7 +17,7 @@ class Worker(QThread):
     find_signal = pyqtSignal(str)  # Signal for successful verification with student ID
     error_signal = pyqtSignal(str)  # Signal for errors or verification failures
 
-    def __init__(self):
+    def __init__(self, db_connection):
         super().__init__()
         self.loop = asyncio.get_event_loop()  # Use the current event loop if available
         self.db_connection = db_connection  # Reuse the provided database connection
@@ -77,6 +77,8 @@ class CameraWindow(QMainWindow):
         self.current_message_box = None
         self.frame_counter = 0  # Add frame counter
         self.frame_skip = 25  # Send request every 25 frames
+
+        self.db_connection = self.open_database_connection()
 
 
         # Initialize Picamera2
@@ -144,7 +146,7 @@ class CameraWindow(QMainWindow):
         self.timer.start(30)  # Update every 30ms
 
         # Initialize worker thread
-        self.worker = Worker()
+        self.worker = Worker(self.db_connection)
         self.worker.find_signal.connect(self.find_message)
         self.worker.error_signal.connect(self.show_error_message)
         self.worker.start()
@@ -164,7 +166,6 @@ class CameraWindow(QMainWindow):
             return None
 
     def close_database_connection(self):
-        """Close the persistent database connection."""
         if self.db_connection:
             self.db_connection.close()
             print("Database connection closed")
