@@ -18,11 +18,11 @@ class Worker(QThread):
 
     def __init__(self):
         super().__init__()
-        #self.is_running = False
+        self.is_running = False
         self.loop = asyncio.new_event_loop()
 
     async def send_request(self, lab_id, image):
-        #self.is_running = True
+        self.is_running = True
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
@@ -49,19 +49,19 @@ class Worker(QThread):
                         self.error_signal.emit(f"Request failed with status code {response.status}")
         except Exception as e:
             self.error_signal.emit(f"Error occurred: {str(e)}")
-        #finally:
-            #self.is_running = False
+        finally:
+            self.is_running = False
 
     def run_task(self, lab_id, image):
-        #if not self.is_running:  
-        asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
+        if not self.is_running:  
+            asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
 
     def run(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
     def stop(self):
-        #self.is_running = False
+        self.is_running = False
         self.loop.call_soon_threadsafe(self.loop.stop)
 
 
