@@ -75,6 +75,8 @@ class CameraWindow(QMainWindow):
         self.lab_name = lab_name
         self.is_popup_open = False
         self.current_message_box = None
+        self.frame_counter = 0  # Add frame counter
+        self.frame_skip = 25  # Send request every 25 frames
 
 
         # Initialize Picamera2
@@ -171,14 +173,12 @@ class CameraWindow(QMainWindow):
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-        #if freq
-            self.worker.run_task(self.lab_id, frame)
+            self.frame_counter += 1
 
-    
-            #if not self.task_queue.full():  # Avoid queue overflow
-            #    print("Adding task to queue")
-            #        self.task_queue.put((self.lab_id, frame))
-            #        print("Task added to queue")
+            # Send a request every n frames
+            if self.frame_counter >= self.frame_skip:
+                self.worker.run_task(self.lab_id, frame)
+                self.frame_counter = 0 
 
         return frame
 
