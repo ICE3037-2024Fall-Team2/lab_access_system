@@ -139,12 +139,9 @@ class LAbSetWindow(QMainWindow):
         self.keypad_frame.hide()
 
     def show_numeric_keypad(self, event):
-        sender = self.sender()  
-        if isinstance(sender, QLineEdit):  
-            self.active_input = sender 
-            self.keypad_frame.show()
-        else:
-            self.active_input = None  
+        sender = self.sender()
+        self.active_input = sender 
+        self.keypad_frame.show()
 
     def keypad_input(self):
         if hasattr(self, "active_input") and self.active_input:  
