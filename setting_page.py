@@ -5,22 +5,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from aws_connect import connect_to_rds 
 from custom_button import CustomButton2
-import subprocess
-
-class VirtualKeyboardLineEdit(QLineEdit):
-    keyboard_process = None  
-
-    def focusInEvent(self, event):
-        if VirtualKeyboardLineEdit.keyboard_process is None:
-            VirtualKeyboardLineEdit.keyboard_process = subprocess.Popen(["onboard"])
-        super().focusInEvent(event)
-
-    def focusOutEvent(self, event):
-        if VirtualKeyboardLineEdit.keyboard_process:
-            VirtualKeyboardLineEdit.keyboard_process.terminate()
-            VirtualKeyboardLineEdit.keyboard_process.wait()
-            VirtualKeyboardLineEdit.keyboard_process = None
-        super().focusOutEvent(event)
 
 class LAbSetWindow(QMainWindow):
     def __init__(self, lab_id=None, lab_name=None):
@@ -54,15 +38,14 @@ class LAbSetWindow(QMainWindow):
         # Lab ID Input
         self.lab_label = QLabel("Lab ID:", self.form_frame)
         self.lab_label.setStyleSheet("font-size: 16px; color: white; margin-bottom: 2px; padding: 5px;")
-        self.lab_input = VirtualKeyboardLineEdit(self.form_frame)
+        self.lab_input = QLineEdit(self.form_frame)
         self.lab_input.setPlaceholderText("Enter Lab ID")
         self.lab_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 5px;")
 
         # Admin ID Input
         self.id_label = QLabel("Admin ID:", self.form_frame)
         self.id_label.setStyleSheet("font-size: 16px; color: white; margin-bottom: 2px; padding: 5px;")
-        #self.id_input = QLineEdit(self.form_frame)
-        self.id_input = VirtualKeyboardLineEdit(self.form_frame) 
+        self.id_input = QLineEdit(self.form_frame)
         self.id_input.setPlaceholderText("Enter Admin ID")
         self.id_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 15px;")
 
