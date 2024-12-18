@@ -71,24 +71,34 @@ class LAbSetWindow(QMainWindow):
         """)
         self.keypad_layout = QHBoxLayout()
         self.keypad_buttons = []
-        for i in range(10):
-            button = QPushButton(str(i))
+        positions = [(0, 0), (0, 1), (0, 2),
+                     (1, 0), (1, 1), (1, 2),
+                     (2, 0), (2, 1), (2, 2)]
+        
+        for idx, pos in enumerate(positions, start=1):
+            button = QPushButton(str(idx))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.keypad_input)
-            self.keypad_layout.addWidget(button)
+            self.keypad_layout.addWidget(button, *pos)
             self.keypad_buttons.append(button)
+
+        # Add 0 button
+        button_zero = QPushButton("0")
+        button_zero.setFixedSize(60, 60)
+        button_zero.clicked.connect(self.keypad_input)
+        self.keypad_layout.addWidget(button_zero, 3, 1)  # Place 0 in the middle of the 4th row
 
         # Add Backspace Button
         backspace_button = QPushButton("←")
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
-        self.keypad_layout.addWidget(backspace_button)
+        self.keypad_layout.addWidget(backspace_button, 3, 0)  # Place Backspace on the left of 4th row
 
         # Add Close Keypad Button
         close_button = QPushButton("Close")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
-        self.keypad_layout.addWidget(close_button)
+        self.keypad_layout.addWidget(close_button, 3, 2)  # Place Close on the right of 4th row
 
         self.keypad_frame.setLayout(self.keypad_layout)
         self.keypad_frame.hide()
@@ -120,29 +130,36 @@ class LAbSetWindow(QMainWindow):
         main_layout.addWidget(self.keypad_frame, alignment=Qt.AlignBottom)
         main_layout.addWidget(self.back_button, alignment=Qt.AlignCenter)
 
-        
-    def show_numeric_keypad(self, event):
-        sender = self.sender()
-        self.active_input = sender  # Track the currently active input field
-        self.keypad_frame.show()
 
     def hide_numeric_keypad(self):
         self.keypad_frame.hide()
 
+    def show_numeric_keypad(self, event):
+        sender = self.sender()  
+        if isinstance(sender, QLineEdit):  
+            self.active_input = sender 
+            self.keypad_frame.show()
+        else:
+            self.active_input = None  
+
     def keypad_input(self):
-        button = self.sender()
-        if hasattr(self, "active_input"):
-            self.active_input.setText(self.active_input.text() + button.text())
+        if hasattr(self, "active_input") and self.active_input:  
+            button = self.sender()
+            current_text = self.active_input.text()
+            self.active_input.setText(current_text + button.text())
+        else:
+            print("Error: No active input field.")
 
     def keypad_backspace(self):
-        if hasattr(self, "active_input"):
+        if hasattr(self, "active_input") and self.active_input: 
             current_text = self.active_input.text()
             self.active_input.setText(current_text[:-1])
+        else:
+            print("Error: No active input field.")
 
     def handle_login(self):
         lab_id = self.lab_input.text().strip() 
         admin_id = self.id_input.text().strip() 
-        #password = self.pass_input.text()
 
         if not admin_id or not lab_id:
             QMessageBox.warning(self, "Input Error", "Both fields are required.")
