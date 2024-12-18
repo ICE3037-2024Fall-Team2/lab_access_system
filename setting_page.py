@@ -45,9 +45,7 @@ class LAbSetWindow(QMainWindow):
         self.lab_input = QLineEdit(self.form_frame)
         self.lab_input.setPlaceholderText("Enter Lab ID")
         self.lab_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 5px;")
-        #num input
-        self.lab_input.mousePressEvent = self.show_numeric_keypad
-
+        self.lab_input.mousePressEvent = lambda event: self.show_numeric_keypad(self.lab_input)
 
 
         # Admin ID Input
@@ -56,8 +54,8 @@ class LAbSetWindow(QMainWindow):
         self.id_input = QLineEdit(self.form_frame)
         self.id_input.setPlaceholderText("Enter Admin ID")
         self.id_input.setStyleSheet("font-size: 16px; background: white; padding: 5px; border-radius: 5px; margin-bottom: 15px;")
-        #num input diag
-        self.id_input.mousePressEvent = self.show_numeric_keypad
+        self.id_input.mousePressEvent = lambda event: self.show_numeric_keypad(self.id_input)
+
 
         # Login Button
         self.login_button = CustomButton2("Set", self.form_frame)
@@ -85,26 +83,26 @@ class LAbSetWindow(QMainWindow):
             button = QPushButton(str(idx))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.keypad_input)
-            self.keypad_layout.addWidget(button, row, col, alignment=Qt.AlignCenter)  # Align buttons in the grid
-            self.keypad_buttons.append(button)
+            self.keypad_layout.addWidget(button, row, col)
+
 
         # Add 0 button
         button_zero = QPushButton("0")
         button_zero.setFixedSize(60, 60)
         button_zero.clicked.connect(self.keypad_input)
-        self.keypad_layout.addWidget(button_zero, 3, 1, alignment=Qt.AlignCenter)  # Place 0 in the middle of the 4th row
+        self.keypad_layout.addWidget(button_zero, 3, 1)
 
         # Add Backspace Button
         backspace_button = QPushButton("←")
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
-        self.keypad_layout.addWidget(backspace_button, 3, 0, alignment=Qt.AlignCenter)  # Place Backspace on the left of 4th row
+        self.keypad_layout.addWidget(backspace_button, 3, 0)
 
         # Add Close Keypad Button
         close_button = QPushButton("Close")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
-        self.keypad_layout.addWidget(close_button, 3, 2, alignment=Qt.AlignCenter)  # Place Close on the right of 4th row
+        self.keypad_layout.addWidget(close_button, 3, 2)
 
         self.keypad_frame.setLayout(self.keypad_layout)
         self.keypad_frame.hide()
@@ -137,25 +135,23 @@ class LAbSetWindow(QMainWindow):
         main_layout.addWidget(self.back_button, alignment=Qt.AlignCenter)
 
 
+    def show_numeric_keypad(self, field):
+        self.active_input = field
+        self.active_input.setFocus()
+        self.keypad_frame.show()
+
     def hide_numeric_keypad(self):
         self.keypad_frame.hide()
         self.active_input = None
 
-    def show_numeric_keypad(self, event):
-        sender = self.sender() 
-        if isinstance(sender, QLineEdit): 
-            self.active_input = sender  
-            self.active_input.setFocus() 
-            self.keypad_frame.show()
-
     def keypad_input(self):
-        button = self.sender()  
-        if hasattr(self, "active_input") and self.active_input: 
+        button = self.sender()
+        if self.active_input:
             current_text = self.active_input.text()
             self.active_input.setText(current_text + button.text())
 
     def keypad_backspace(self):
-        if hasattr(self, "active_input") and self.active_input:
+        if self.active_input:
             current_text = self.active_input.text()
             self.active_input.setText(current_text[:-1])
             
