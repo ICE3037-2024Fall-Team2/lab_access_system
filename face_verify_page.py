@@ -173,12 +173,13 @@ class CameraWindow(QMainWindow):
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            self.frame_counter += 1
+            #self.frame_counter += 1
+            self.worker.run_task(self.lab_id, frame)
 
             # Send a request every n frames
-            if self.frame_counter >= self.frame_skip:
-                self.worker.run_task(self.lab_id, frame)
-                self.frame_counter = 0 
+            #if self.frame_counter >= self.frame_skip:
+                #self.worker.run_task(self.lab_id, frame)
+                #self.frame_counter = 0 
 
         return frame
 
