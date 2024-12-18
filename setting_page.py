@@ -71,15 +71,18 @@ class LAbSetWindow(QMainWindow):
         """)
         self.keypad_layout = QHBoxLayout()
         self.keypad_buttons = []
-        positions = [(0, 0), (0, 1), (0, 2),
-                     (1, 0), (1, 1), (1, 2),
-                     (2, 0), (2, 1), (2, 2)]
+        positions = [
+            (0, 0), (0, 1), (0, 2), 
+            (1, 0), (1, 1), (1, 2), 
+            (2, 0), (2, 1), (2, 2)
+        ]
         
         for idx, pos in enumerate(positions, start=1):
             button = QPushButton(str(idx))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.keypad_input)
-            self.keypad_layout.addWidget(button, *pos)
+            row, col = pos  # Unpack position into row and column
+            self.keypad_layout.addWidget(button, row, col)
             self.keypad_buttons.append(button)
 
         # Add 0 button
