@@ -12,7 +12,7 @@ import aiohttp
 import asyncio
 from queue import Queue
 import pymysql
-from ..config import DB_CONFIG
+from config import DB_CONFIG
 
 
 db_config = DB_CONFIG
