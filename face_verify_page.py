@@ -26,13 +26,11 @@ class Worker(QThread):
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
-            #data = aiohttp.FormData()
             data = aiohttp.FormData()
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
             #debug
-            print(f"Sending lab_id: {lab_id}, Image size: {len(img_bytes)}")
-            print(f"Form data being sent: {data}")
+            print(f"Sending request with lab_id: {lab_id}, Image size: {len(img_bytes)}")
 
 
             async with aiohttp.ClientSession() as session:
@@ -54,7 +52,9 @@ class Worker(QThread):
 
     def run_task(self, lab_id, image):
         if not self.is_running:  
-            asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
+            #asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
+            asyncio.run_coroutine_threadsafe(asyncio.create_task(self.send_request(lab_id, image)), self.loop)
+
 
     def run(self):
         asyncio.set_event_loop(self.loop)
@@ -177,7 +177,7 @@ class CameraWindow(QMainWindow):
             #self.worker.run_task(self.lab_id, frame)
 
             # Send a request every n frames
-            if self.frame_counter >= self.frame_skip:
+            if self.frame_counter >= self.frame_skip and not self.worker.is_running:
                 self.worker.run_task(self.lab_id, frame)
                 self.frame_counter = 0 
 
