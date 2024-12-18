@@ -17,9 +17,9 @@ model_name = "ArcFace"
 model = DeepFace.build_model(model_name)
 
 
-
 # Matching threshold
 threshold = 0.68
+
 
 def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
     try:
@@ -33,13 +33,13 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
         app.logger.error(f"Error generating presigned URL: {e}")
         return None
 
+
 def parse_from_request(request):
     """Parse image from form-data request."""
-    # Get image file from the form-data (uploaded as 'image')
     file = request.files.get('image')
     if not file or file.filename == '':
         raise ValueError("No file part in form-data request")
-    
+
     image_data = file.read()
 
     # Get lab_id from form-data
@@ -50,7 +50,7 @@ def parse_from_request(request):
     # Convert image data to numpy array
     np_arr = np.frombuffer(image_data, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    
+
     if img is None:
         raise ValueError("Failed to decode image")
 
@@ -77,9 +77,8 @@ def upload_image():
                 """, (lab_id, today_date))
                 reservations = cursor.fetchall()
 
-        if not reservations:
-            return jsonify({"verified": False, "message": "No reservation for this lab today"})
-
+                if not reservations:
+                    return jsonify({"verified": False, "message": "No reservation for this lab today"})
 
         # Image verification
         matched_student_id = None
@@ -87,6 +86,7 @@ def upload_image():
 
         for student_id, photo_path in students:
             presigned_url = generate_presigned_url(s3_client, bucket_name, photo_path)
+
             if not presigned_url:
                 app.logger.warning(f"Failed to generate presigned URL for {photo_path}")
                 continue
@@ -123,15 +123,12 @@ def upload_image():
         if matched_student_id:
             for user_id, reservation_id, date, time in reservations:
                 if user_id == matched_student_id:
-                    # Check if the reservation is within the valid time window
-                    #reservation_time = datetime.datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
-                    reservation_time = datetime.datetime.strptime(f"{date.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
+                    reservation_time = datetime.datetime.strptime(
+                        f"{date.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
                     current_time = datetime.datetime.now()
                     time_diff = abs((current_time - reservation_time).total_seconds()) / 60
 
                     if time_diff <= 5:  # Valid if within 5 minutes
-                        #reservation_found = True
-                        # Mark the reservation as checked
                         with pymysql.connect(**db_config) as connection:
                             with connection.cursor() as cursor:
                                 cursor.execute(
@@ -142,9 +139,8 @@ def upload_image():
                         return jsonify({"verified": True, "student_id": matched_student_id})
 
             return jsonify({"verified": False, "message": "No matching reservations found"})
-            
-        else:
-            return jsonify({"verified": False, "message": "No matching student found"})
+
+        return jsonify({"verified": False, "message": "No matching student found"})
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -152,5 +148,6 @@ def upload_image():
         app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
+
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
