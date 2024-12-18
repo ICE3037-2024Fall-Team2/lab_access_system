@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QGridLayout, QMessageBox, QWidget, QFrame, QHBoxLayout
+    QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QGridLayout, QMessageBox, QWidget, QFrame
 )
 
 from PyQt5.QtGui import QFont
@@ -18,6 +18,8 @@ class LAbSetWindow(QMainWindow):
         self.lab_id = lab_id if lab_id else None
         self.lab_name = lab_name if lab_name else None
 
+        self.active_input = None
+         
         # Main Widget
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
