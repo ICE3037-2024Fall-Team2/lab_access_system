@@ -118,14 +118,14 @@ class LAbSetWindow(QMainWindow):
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
         backspace_button.setStyleSheet(button_style)
-        self.keypad_layout.addWidget(backspace_button, 3, 0)
+        self.keypad_layout.addWidget(backspace_button, 3, 2)
 
         # Add Close Keypad Button
         close_button = QPushButton("X")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
         close_button.setStyleSheet(button_style) 
-        self.keypad_layout.addWidget(close_button, 3, 2)
+        self.keypad_layout.addWidget(close_button, 3, 0)
 
         self.keypad_frame.setLayout(self.keypad_layout)
         self.keypad_frame.hide()
