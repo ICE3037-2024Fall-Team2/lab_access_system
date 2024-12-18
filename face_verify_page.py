@@ -29,6 +29,8 @@ class Worker(QThread):
             data = aiohttp.FormData()
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
+            #debug
+            print(f"Sending lab_id: {lab_id}, Image size: {len(img_bytes)}")
 
             async with aiohttp.ClientSession() as session:
                 async with session.post('http://localhost:5001/upload_image', data=data) as response:
@@ -79,12 +81,15 @@ class CameraWindow(QMainWindow):
         # Load Haar Cascade for face detection
         self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
 
+
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
 
-        #self.welcome_label = QLabel("Please show your QR-code", self)
-        #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
+        # Status label
+        self.status_label = QLabel("Please show your face", self.main_widget)
+        self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: blue;")
+        self.status_label.setAlignment(Qt.AlignCenter)
 
         self.camera_label = QLabel(self)
         self.camera_label.setStyleSheet("border: 1px solid black;")
@@ -121,7 +126,7 @@ class CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
-        #main_layout.addWidget(self.welcome_label)
+        main_layout.addWidget(self.status_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
@@ -156,6 +161,8 @@ class CameraWindow(QMainWindow):
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         if len(faces) > 0:
+            self.status_label.setText("Face detected. Identifying...") 
+
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
@@ -170,6 +177,8 @@ class CameraWindow(QMainWindow):
         return frame
 
     def show_error_message(self, message):
+        self.status_label.setText("Please show your face") 
+
         if not self.is_popup_open:
             self.is_popup_open = True
             self.current_message_box = QMessageBox(self)
@@ -185,6 +194,8 @@ class CameraWindow(QMainWindow):
         self.current_message_box = None
 
     def find_message(self, student_id):
+        self.status_label.setText("Student identified. Verifying...")
+
         if self.current_message_box:
             self.current_message_box.close()
 

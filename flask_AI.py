@@ -75,6 +75,9 @@ def upload_image():
     try:
         img, lab_id = parse_from_request(request)
         mirrored_img = cv2.flip(img, 1)
+        #debug
+        app.logger.info("Received request")
+        app.logger.info(f"Lab ID: {lab_id}, Image shape: {img.shape if img is not None else 'None'}")
 
         # Connect to RDS and fetch students
         with pymysql.connect(**db_config) as connection:
