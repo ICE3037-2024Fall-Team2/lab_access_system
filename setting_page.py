@@ -68,8 +68,8 @@ class LAbSetWindow(QMainWindow):
             border: 1px solid #ccc;
             border-radius: 10px;
             padding: 10px;
-            width: 90%;
         """)
+        self.keypad_frame.setFixedWidth(300)
         self.keypad_layout = QGridLayout()
         self.keypad_buttons = []
         
@@ -83,10 +83,10 @@ class LAbSetWindow(QMainWindow):
                 font-size: 18px;
             }
             QPushButton:focus {
-                outline: none;  /* Remove tab focus outline */
+                outline: none; 
             }
             QPushButton:pressed {
-                background-color: #d6d6d6;  /* Darker background when pressed */
+                background-color: #d6d6d6;
             }
         """
 
@@ -121,7 +121,7 @@ class LAbSetWindow(QMainWindow):
         self.keypad_layout.addWidget(backspace_button, 3, 0)
 
         # Add Close Keypad Button
-        close_button = QPushButton("Close")
+        close_button = QPushButton("X")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
         close_button.setStyleSheet(button_style) 
