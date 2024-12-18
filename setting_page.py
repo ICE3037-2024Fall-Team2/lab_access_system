@@ -11,39 +11,38 @@ class NumericInputPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Numeric Input")
-        self.setFixedSize(300, 400)
+        self.setWindowFlags(self.windowFlags() | Qt.Tool) 
+        self.setFixedSize(400, 300)
         self.input_value = ""
 
         grid_layout = QGridLayout()
 
+        # Horizontal layout for buttons
+        button_layout = QHBoxLayout()
+
         # Add buttons 0-9
-        for i in range(1, 10):
+        for i in range(10):
             button = QPushButton(str(i))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.number)
-            grid_layout.addWidget(button, (i - 1) // 3, (i - 1) % 3)
+            button_layout.addWidget(button)
 
-        # Add 0 button
-        button_zero = QPushButton("0")
-        button_zero.setFixedSize(60, 60)
-        button_zero.clicked.connect(self.number)
-        grid_layout.addWidget(button_zero, 3, 1)
-
-        # Add Backspace button
+        # Add Backspace and Close buttons
+        extra_button_layout = QHBoxLayout()
         backspace_button = QPushButton("←")
-        backspace_button.setFixedSize(60, 60)
+        backspace_button.setFixedSize(100, 60)
         backspace_button.clicked.connect(self.backspace)
-        grid_layout.addWidget(backspace_button, 3, 0)
+        extra_button_layout.addWidget(backspace_button)
 
-        # Add Close button
         close_button = QPushButton("Close")
-        close_button.setFixedSize(60, 60)
+        close_button.setFixedSize(100, 60)
         close_button.clicked.connect(self.close)
-        grid_layout.addWidget(close_button, 3, 2)
+        extra_button_layout.addWidget(close_button)
 
-        # Main Layout
+        # Main layout
         main_layout = QVBoxLayout()
-        main_layout.addLayout(grid_layout)
+        main_layout.addLayout(button_layout)
+        main_layout.addLayout(extra_button_layout)
         self.setLayout(main_layout)
 
     def number(self):
@@ -146,8 +145,19 @@ class LAbSetWindow(QMainWindow):
     def open_numeric_popup(self, event):
         sender = self.sender()  # Determine which input field triggered the popup
         popup = NumericInputPopup(self)
+
+        # Position the popup near the bottom center of the screen
+        screen_geometry = self.screen().geometry()
+        popup_width = popup.width()
+        popup_height = popup.height()
+        popup_x = (screen_geometry.width() - popup_width) // 2
+        popup_y = screen_geometry.height() - popup_height - 50  # Adjust margin from bottom
+        popup.move(popup_x, popup_y)
+
+        # Show the popup
         if popup.exec_() == QDialog.Accepted:
             sender.setText(popup.get_value())
+
 
     def handle_login(self):
         lab_id = self.lab_input.text().strip() 
