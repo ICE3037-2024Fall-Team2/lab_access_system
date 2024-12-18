@@ -158,14 +158,17 @@ def upload_image():
                     time_diff = abs((current_time - reservation_time).total_seconds()) / 60
 
                     if time_diff <= 5:  # Valid if within 5 minutes
-                        with pymysql.connect(**db_config) as connection:
-                            with connection.cursor() as cursor:
-                                cursor.execute(
-                                    "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
-                                    (reservation_id,)
-                                )
-                                connection.commit()
-                        return jsonify({"verified": True, "student_id": matched_student_id})
+                        try:
+                            with pymysql.connect(**db_config) as connection:
+                                with connection.cursor() as cursor:
+                                    cursor.execute(
+                                        "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
+                                        (reservation_id,)
+                                    )
+                                    connection.commit()
+                            return jsonify({"verified": True, "student_id": matched_student_id})
+                        except pymysql.MySQLError as e:
+                            print(f"Error: {e}")
 
             return jsonify({"verified": False, "message": "No matching reservations found"})
 
