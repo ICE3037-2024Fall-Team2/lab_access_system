@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 )
@@ -15,6 +15,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Lab Reservation System")
         self.showFullScreen()
         self.setGeometry(100, 100, 720, 1080)
+        self.setStyleSheet("background-color:white;")
 
         self.lab_id = lab_id if lab_id else None
         self.lab_name = lab_name if lab_name else None
@@ -89,7 +90,8 @@ class MainWindow(QMainWindow):
     def open_qr_camera_page(self):
         self.qrcamera_window = QR_CameraWindow(self.lab_id,self.lab_name)
         self.qrcamera_window.show()
-        self.close()
+        #self.close()
+        QTimer.singleShot(80, self.clone)
 
     #def open_face_camera_page(self):
     #    self.facecamera_window = CameraWindow(self.lab_id,self.lab_name)
@@ -100,7 +102,8 @@ class MainWindow(QMainWindow):
     def open_settings_page(self):
         self.setting_window = LAbSetWindow(self.lab_id, self.lab_name)
         self.setting_window.show()
-        self.close()
+        #self.close()
+        QTimer.singleShot(80, self.close)
 
     def close_application(self):
         QApplication.quit()
