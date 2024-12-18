@@ -68,40 +68,63 @@ class LAbSetWindow(QMainWindow):
             border: 1px solid #ccc;
             border-radius: 10px;
             padding: 10px;
+            width: 90%;
         """)
         self.keypad_layout = QGridLayout()
         self.keypad_buttons = []
+        
+        # Add styles for the buttons
+        button_style = """
+            QPushButton {
+                background-color: #e0e0e0;
+                color: #000;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                font-size: 18px;
+            }
+            QPushButton:focus {
+                outline: none;  /* Remove tab focus outline */
+            }
+            QPushButton:pressed {
+                background-color: #d6d6d6;  /* Darker background when pressed */
+            }
+        """
 
         # Create buttons for numbers 1-9 in a grid format
         positions = [
-            (0, 0), (0, 1), (0, 2),  # Row 0: 1, 2, 3
-            (1, 0), (1, 1), (1, 2),  # Row 1: 4, 5, 6
-            (2, 0), (2, 1), (2, 2)   # Row 2: 7, 8, 9
+            (0, 0), (0, 1), (0, 2), 
+            (1, 0), (1, 1), (1, 2),  
+            (2, 0), (2, 1), (2, 2)   
         ]
 
         for idx, (row, col) in enumerate(positions, start=1):
             button = QPushButton(str(idx))
             button.setFixedSize(60, 60)
             button.clicked.connect(self.keypad_input)
+            button.setStyleSheet(button_style)
             self.keypad_layout.addWidget(button, row, col)
+            self.keypad_buttons.append(button)
 
 
         # Add 0 button
         button_zero = QPushButton("0")
         button_zero.setFixedSize(60, 60)
         button_zero.clicked.connect(self.keypad_input)
+        button_zero.setStyleSheet(button_style)
         self.keypad_layout.addWidget(button_zero, 3, 1)
 
         # Add Backspace Button
         backspace_button = QPushButton("←")
         backspace_button.setFixedSize(60, 60)
         backspace_button.clicked.connect(self.keypad_backspace)
+        backspace_button.setStyleSheet(button_style)
         self.keypad_layout.addWidget(backspace_button, 3, 0)
 
         # Add Close Keypad Button
         close_button = QPushButton("Close")
         close_button.setFixedSize(60, 60)
         close_button.clicked.connect(self.hide_numeric_keypad)
+        close_button.setStyleSheet(button_style) 
         self.keypad_layout.addWidget(close_button, 3, 2)
 
         self.keypad_frame.setLayout(self.keypad_layout)
