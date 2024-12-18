@@ -154,7 +154,7 @@ class LAbSetWindow(QMainWindow):
         main_layout.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(self.title_label)
         main_layout.addWidget(self.form_frame, alignment=Qt.AlignCenter)
-        main_layout.addWidget(self.keypad_frame, alignment=Qt.AlignBottom)
+        main_layout.addWidget(self.keypad_frame, alignment=Qt.AlignCenter)
         main_layout.addWidget(self.back_button, alignment=Qt.AlignCenter)
 
 
