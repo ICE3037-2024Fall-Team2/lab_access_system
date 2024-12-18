@@ -140,23 +140,22 @@ class LAbSetWindow(QMainWindow):
 
     def show_numeric_keypad(self, event):
         sender = self.sender()
-        self.active_input = sender 
-        self.keypad_frame.show()
+        if isinstance(sender, QLineEdit):  # Ensure sender is a QLineEdit
+            self.active_input = sender
+            sender.setFocus()  # Manually set focus to the QLineEdit
+            self.keypad_frame.show()
 
     def keypad_input(self):
-        if hasattr(self, "active_input") and self.active_input:  
-            button = self.sender()
+        button = self.sender()
+        if hasattr(self, "active_input") and self.active_input.hasFocus():
             current_text = self.active_input.text()
             self.active_input.setText(current_text + button.text())
-        else:
-            print("Error: No active input field.")
 
     def keypad_backspace(self):
-        if hasattr(self, "active_input") and self.active_input: 
+        if hasattr(self, "active_input"):
             current_text = self.active_input.text()
             self.active_input.setText(current_text[:-1])
-        else:
-            print("Error: No active input field.")
+            
 
     def handle_login(self):
         lab_id = self.lab_input.text().strip() 
