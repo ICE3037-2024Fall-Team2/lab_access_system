@@ -10,7 +10,7 @@ class CustomButton1_trans(QPushButton):
             color: white;
             font-size: 20px;
             border-radius: 8px;
-            
+            outline: none;
             cursor: pointer;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -86,7 +86,7 @@ class CustomButton2(QPushButton):
         super().__init__(text, parent)
         
         self.setStyleSheet('''
-            background: #006d2e;
+            background: #009846;
             color: white;
             font-size: 18px;
             border-radius: 8px;
@@ -104,7 +104,7 @@ class CustomButton2(QPushButton):
         if obj == self:
             if event.type() == 2:  # Mouse press event (simulating :active)
                 self.setStyleSheet('''
-                    background: #009846;
+                    background: #006d2e;
                     color: white;
                     font-size: 18px;
                     padding: 10px;
