@@ -5,6 +5,8 @@ This project is part of our Capstone Design Project for Sungkyunkwan University.
 ## Overview
 The **Lab Access System** is a Raspberry Pi-based solution for secure lab entry. It uses facial recognition and QR codes to validate student reservations, ensuring secure and seamless access during their reserved times.
 
+Initially developed as a web application, the project faced performance limitations that impacted features like QR code scanning and overall performance. To address these challenges and ensure seamless integration of features, the project was transitioned to a Python-based application.
+
 ## Related Repositories
 - [Lab Reservation System - Website for Reservation](https://github.com/ICE3037-2024Fall-Team2/lab_reservation_system)  
     *(This repository contains the software we developed for managing lab reservations, including booking, scheduling, and database management, which is another part of our project.)*
