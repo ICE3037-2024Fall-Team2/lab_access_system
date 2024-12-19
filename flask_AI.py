@@ -88,7 +88,7 @@ def update_missing_features():
     try:
         with pymysql.connect(**db_config) as connection:
             with connection.cursor() as cursor:
-                # Query records where features are NULL and photo_path is not NULL
+                # 获取未计算 features 的记录
                 cursor.execute("SELECT id, photo_path FROM user_img WHERE features IS NULL AND photo_path IS NOT NULL")
                 missing_features = cursor.fetchall()
 
@@ -105,16 +105,18 @@ def update_missing_features():
                         app.logger.warning(f"Failed to decode image for user {user_id}")
                         continue
 
-                    # Extract embedding feature
-                    feature = calculate_feature(img)
-                    if feature is not None:
-                        # Store the feature as JSON array directly
+                    embeddings = DeepFace.represent(img, model_name=model_name, enforce_detection=False)
+
+                   
+                    if embeddings and "embedding" in embeddings[0]:
+  
+                        feature = np.array(embeddings[0]["embedding"], dtype=np.float32)
+             
                         feature_json = json.dumps(feature.tolist())
                         cursor.execute("UPDATE user_img SET features = %s WHERE id = %s", (feature_json, user_id))
                         connection.commit()
     except pymysql.MySQLError as e:
         app.logger.error(f"Database error: {e}")
-
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
