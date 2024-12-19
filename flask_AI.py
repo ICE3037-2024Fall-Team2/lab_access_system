@@ -50,8 +50,12 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
 
 def calculate_feature(image):
     try:
+        # 提取 embedding 数组
         embedding = DeepFace.represent(image, model_name=model_name, enforce_detection=False)
-        return np.array(embedding).flatten()
+        if isinstance(embedding, list) and len(embedding) > 0:
+            return np.array(embedding[0]["embedding"], dtype=np.float32) 
+        else:
+            raise ValueError("Invalid embedding format")
     except Exception as e:
         app.logger.error(f"Error calculating feature: {e}")
         return None
