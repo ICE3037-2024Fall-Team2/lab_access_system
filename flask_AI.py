@@ -56,37 +56,6 @@ def calculate_feature(image):
         app.logger.error(f"Error calculating feature: {e}")
         return None
 
-def update_missing_features():
-    try:
-        with pymysql.connect(**db_config) as connection:
-            with connection.cursor() as cursor:
-                
-                cursor.execute("SELECT id, photo_path FROM user_img WHERE features IS NULL AND photo_path IS NOT NULL")
-                missing_features = cursor.fetchall()
-
-                for user_id, photo_path in missing_features:
-                    presigned_url = generate_presigned_url(s3_client, bucket_name, photo_path)
-                    if not presigned_url:
-                        continue
-
-                    response = requests.get(presigned_url)
-                    img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
-                    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-
-                    if img is None:
-                        app.logger.warning(f"Failed to decode image for user {user_id}")
-                        continue
-
-         
-                    feature = calculate_feature(img) 
-                    if feature is not None:
-                        # 转换为 JSON 格式存储
-                        feature_json = json.dumps(feature.tolist())
-                        cursor.execute("UPDATE user_img SET features = %s WHERE id = %s", (feature_json, user_id))
-                        connection.commit()
-    except pymysql.MySQLError as e:
-        app.logger.error(f"Database error: {e}")
-
 
 def parse_from_request(request):
     try:
@@ -111,12 +80,45 @@ def parse_from_request(request):
         raise
 
 
+def update_missing_features():
+    try:
+        with pymysql.connect(**db_config) as connection:
+            with connection.cursor() as cursor:
+                # Query records where features are NULL and photo_path is not NULL
+                cursor.execute("SELECT id, photo_path FROM user_img WHERE features IS NULL AND photo_path IS NOT NULL")
+                missing_features = cursor.fetchall()
+
+                for user_id, photo_path in missing_features:
+                    presigned_url = generate_presigned_url(s3_client, bucket_name, photo_path)
+                    if not presigned_url:
+                        continue
+
+                    response = requests.get(presigned_url)
+                    img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+                    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+                    if img is None:
+                        app.logger.warning(f"Failed to decode image for user {user_id}")
+                        continue
+
+                    # Extract embedding feature
+                    feature = calculate_feature(img)
+                    if feature is not None:
+                        # Store the feature as JSON array directly
+                        feature_json = json.dumps(feature.tolist())
+                        cursor.execute("UPDATE user_img SET features = %s WHERE id = %s", (feature_json, user_id))
+                        connection.commit()
+    except pymysql.MySQLError as e:
+        app.logger.error(f"Database error: {e}")
+
+
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     try:
         update_missing_features()
         img, lab_id = parse_from_request(request)
 
+        # Extract embedding from the uploaded image
         input_feature = calculate_feature(img)
         if input_feature is None:
             return jsonify({"error": "Feature extraction failed"}), 400
@@ -126,11 +128,13 @@ def upload_image():
 
         with pymysql.connect(**db_config) as connection:
             with connection.cursor() as cursor:
+                # Query all stored features
                 cursor.execute("SELECT id, features FROM user_img WHERE features IS NOT NULL")
                 students = cursor.fetchall()
 
                 for student_id, features_json in students:
-                    db_feature = np.array(json.loads(features_json)["embedding"], dtype=np.float32) 
+                    # Load features directly from JSON array
+                    db_feature = np.array(json.loads(features_json), dtype=np.float32)
                     distance = np.linalg.norm(input_feature - db_feature)
 
                     if distance < min_distance and distance < threshold:
