@@ -47,22 +47,54 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
         return None
 
 
-def parse_from_request(request):
-    """Parse image from form-data request."""
+def calculate_feature(image):
     try:
-        # Get image file from the form-data
+        embedding = DeepFace.represent(image, model_name=model_name, model=model, enforce_detection=False)
+        return np.array(embedding).flatten()
+    except Exception as e:
+        app.logger.error(f"Error calculating feature: {e}")
+        return None
+
+
+def update_missing_features():
+    try:
+        with pymysql.connect(**db_config) as connection:
+            with connection.cursor() as cursor:
+               
+                cursor.execute("SELECT id, photo_path FROM user_img WHERE feature IS NULL AND photo_path IS NOT NULL")
+                missing_features = cursor.fetchall()
+
+                for user_id, photo_path in missing_features:
+                    presigned_url = generate_presigned_url(s3_client, bucket_name, photo_path)
+                    if not presigned_url:
+                        continue
+
+                    response = requests.get(presigned_url)
+                    img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+                    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+                    if img is None:
+                        app.logger.warning(f"Failed to decode image for user {user_id}")
+                        continue
+
+                    feature = calculate_feature(img)
+                    if feature is not None:
+                        cursor.execute("UPDATE user_img SET feature = %s WHERE id = %s", (feature.tobytes(), user_id))
+                        connection.commit()
+    except pymysql.MySQLError as e:
+        app.logger.error(f"Database error: {e}")
+
+def parse_from_request(request):
+    try:
         file = request.files.get('image')
         if not file or file.filename == '':
             raise ValueError("No file part in form-data request")
 
         image_data = file.read()
-
-        # Get lab_id from form-data
         lab_id = request.form.get('lab_id')
         if not lab_id:
             raise ValueError("Missing 'lab_id' in form-data request")
 
-        # Convert image data to numpy array
         np_arr = np.frombuffer(image_data, np.uint8)
         img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
@@ -71,108 +103,60 @@ def parse_from_request(request):
 
         return img, lab_id
     except Exception as e:
-        print(f"Error parsing request: {str(e)}")
+        app.logger.error(f"Error parsing request: {e}")
         raise
-
 
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     try:
-        #debug
-        print("Received request")
-        print(f"Request form data: {request.form}")
-        print(f"Request files: {request.files}")
-
+        update_missing_features()
         img, lab_id = parse_from_request(request)
-        print(f"Parsed lab_id: {lab_id}, Image shape: {img.shape if img is not None else 'None'}")
 
-        mirrored_img = cv2.flip(img, 1)
-        
-        # Connect to RDS and fetch students
-        try:
-            with pymysql.connect(**db_config) as connection:
-                with connection.cursor() as cursor:
-                    cursor.execute("SELECT id, photo_path FROM user_img")
-                    students = cursor.fetchall()
+        input_feature = calculate_feature(img)
+        if input_feature is None:
+            return jsonify({"error": "Feature extraction failed"}), 400
 
-                    # Query reservations for today
-                    today_date = datetime.date.today()
-                    cursor.execute("""
-                        SELECT user_id, reservation_id, date, time FROM reservations
-                        WHERE lab_id = %s AND date = %s AND verified = 1
-                    """, (lab_id, today_date))
-                    reservations = cursor.fetchall()
-
-                    if not reservations:
-                        return jsonify({"verified": False, "message": "No reservation for this lab today"})
-        except pymysql.MySQLError as e:
-            print(f"Error: {e}")
-
-        # Image verification
         matched_student_id = None
         min_distance = float("inf")
 
-        for student_id, photo_path in students:
-            presigned_url = generate_presigned_url(s3_client, bucket_name, photo_path)
+        with pymysql.connect(**db_config) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT id, feature FROM user_img")
+                students = cursor.fetchall()
 
-            if not presigned_url:
-                app.logger.warning(f"Failed to generate presigned URL for {photo_path}")
-                continue
+                for student_id, feature_blob in students:
+                    db_feature = np.frombuffer(feature_blob, dtype=np.float32)
+                    distance = np.linalg.norm(input_feature - db_feature)
 
-            try:
-                response = requests.get(presigned_url)
-                response.raise_for_status()
-                img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
-                db_img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                    if distance < min_distance and distance < threshold:
+                        min_distance = distance
+                        matched_student_id = student_id
 
-                if db_img is None:
-                    app.logger.warning(f"Failed to decode image from S3: {photo_path}")
-                    continue
+                today_date = datetime.date.today()
+                cursor.execute("""
+                    SELECT user_id, reservation_id, date, time FROM reservations
+                    WHERE lab_id = %s AND date = %s AND verified = 1
+                """, (lab_id, today_date))
+                reservations = cursor.fetchall()
 
-                if db_img.shape[2] == 4:
-                    db_img = cv2.cvtColor(db_img, cv2.COLOR_BGRA2BGR)
+                if matched_student_id:
+                    for user_id, reservation_id, date, time in reservations:
+                        if user_id == matched_student_id:
+                            reservation_time = datetime.datetime.strptime(
+                                f"{date.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
+                            current_time = datetime.datetime.now()
+                            time_diff = abs((current_time - reservation_time).total_seconds()) / 60
 
-            except Exception as e:
-                app.logger.warning(f"Error loading image from S3: {photo_path}, Error: {e}")
-                continue
+                            if time_diff <= 5:
+                                cursor.execute(
+                                    "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
+                                    (reservation_id,)
+                                )
+                                connection.commit()
+                                return jsonify({"verified": True, "student_id": matched_student_id})
 
-            result_original = DeepFace.verify(
-                img1_path=img, img2_path=db_img, model_name="ArcFace", enforce_detection=False
-            )
-            result_mirrored = DeepFace.verify(
-                img1_path=mirrored_img, img2_path=db_img, model_name="ArcFace", enforce_detection=False
-            )
-
-            best_distance = min(result_original["distance"], result_mirrored["distance"])
-            if best_distance < min_distance and best_distance < threshold:
-                min_distance = best_distance
-                matched_student_id = student_id
-
-        if matched_student_id:
-            for user_id, reservation_id, date, time in reservations:
-                if user_id == matched_student_id:
-                    reservation_time = datetime.datetime.strptime(
-                        f"{date.strftime('%Y-%m-%d')} {time}", "%Y-%m-%d %H:%M")
-                    current_time = datetime.datetime.now()
-                    time_diff = abs((current_time - reservation_time).total_seconds()) / 60
-
-                    if time_diff <= 5:  # Valid if within 5 minutes
-                        try:
-                            with pymysql.connect(**db_config) as connection:
-                                with connection.cursor() as cursor:
-                                    cursor.execute(
-                                        "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
-                                        (reservation_id,)
-                                    )
-                                    connection.commit()
-                            return jsonify({"verified": True, "student_id": matched_student_id})
-                        except pymysql.MySQLError as e:
-                            print(f"Error: {e}")
-
-            return jsonify({"verified": False, "message": "No matching reservations found"})
-
-        return jsonify({"verified": False, "message": "No matching student found"})
+        return jsonify({"verified": False, "message": "No matching student or reservation found"})
 
     except ValueError as e:
         app.logger.error(f"ValueError: {e}")
