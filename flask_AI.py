@@ -9,6 +9,7 @@ import requests
 from botocore.exceptions import ClientError
 from flask_cors import CORS
 from config import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME, S3_BUCKET_NAME, DB_CONFIG
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -49,19 +50,18 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
 
 def calculate_feature(image):
     try:
-        embedding = DeepFace.represent(image, model_name=model_name, model=model, enforce_detection=False)
+        embedding = DeepFace.represent(image, model_name=model_name, enforce_detection=False)
         return np.array(embedding).flatten()
     except Exception as e:
         app.logger.error(f"Error calculating feature: {e}")
         return None
 
-
 def update_missing_features():
     try:
         with pymysql.connect(**db_config) as connection:
             with connection.cursor() as cursor:
-               
-                cursor.execute("SELECT id, photo_path FROM user_img WHERE feature IS NULL AND photo_path IS NOT NULL")
+                
+                cursor.execute("SELECT id, photo_path FROM user_img WHERE features IS NULL AND photo_path IS NOT NULL")
                 missing_features = cursor.fetchall()
 
                 for user_id, photo_path in missing_features:
@@ -77,12 +77,16 @@ def update_missing_features():
                         app.logger.warning(f"Failed to decode image for user {user_id}")
                         continue
 
-                    feature = calculate_feature(img)
+         
+                    feature = calculate_feature(img) 
                     if feature is not None:
-                        cursor.execute("UPDATE user_img SET feature = %s WHERE id = %s", (feature.tobytes(), user_id))
+                        # 转换为 JSON 格式存储
+                        feature_json = json.dumps(feature.tolist())
+                        cursor.execute("UPDATE user_img SET features = %s WHERE id = %s", (feature_json, user_id))
                         connection.commit()
     except pymysql.MySQLError as e:
         app.logger.error(f"Database error: {e}")
+
 
 def parse_from_request(request):
     try:
@@ -122,11 +126,11 @@ def upload_image():
 
         with pymysql.connect(**db_config) as connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id, feature FROM user_img")
+                cursor.execute("SELECT id, features FROM user_img WHERE features IS NOT NULL")
                 students = cursor.fetchall()
 
-                for student_id, feature_blob in students:
-                    db_feature = np.frombuffer(feature_blob, dtype=np.float32)
+                for student_id, features_json in students:
+                    db_feature = np.array(json.loads(features_json), dtype=np.float32) 
                     distance = np.linalg.norm(input_feature - db_feature)
 
                     if distance < min_distance and distance < threshold:
