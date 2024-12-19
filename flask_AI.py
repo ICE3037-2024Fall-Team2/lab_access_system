@@ -109,7 +109,6 @@ def update_missing_features():
 
                    
                     if embeddings and "embedding" in embeddings[0]:
-  
                         feature = np.array(embeddings[0]["embedding"], dtype=np.float32)
              
                         feature_json = json.dumps(feature.tolist())
@@ -155,6 +154,7 @@ def upload_image():
                 reservations = cursor.fetchall()
 
                 if matched_student_id:
+                    print(matched_student_id)
                     for user_id, reservation_id, date, time in reservations:
                         if user_id == matched_student_id:
                             reservation_time = datetime.datetime.strptime(
@@ -167,6 +167,8 @@ def upload_image():
                                     "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
                                     (reservation_id,)
                                 )
+                            else:
+                                return jsonify({"verified": False, "message": "Not in the reservation time slot"})
                                 connection.commit()
                                 return jsonify({"verified": True, "student_id": matched_student_id})
 

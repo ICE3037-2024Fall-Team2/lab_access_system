@@ -11,24 +11,18 @@ import numpy as np
 import aiohttp
 import asyncio
 from queue import Queue
-import pymysql
-from config import DB_CONFIG
-
-
-db_config = DB_CONFIG
 
 class Worker(QThread):
-    find_signal = pyqtSignal(str)  # Signal for successful verification with student ID
-    error_signal = pyqtSignal(str)  # Signal for errors or verification failures
+    find_signal = pyqtSignal(str)
+    error_signal = pyqtSignal(str)
 
-    def __init__(self, db_connection):
+    def __init__(self):
         super().__init__()
-        self.loop = asyncio.get_event_loop()  # Use the current event loop if available
-        self.db_connection = db_connection  # Reuse the provided database connection
-
+        self.is_running = False
+        self.loop = asyncio.new_event_loop() 
 
     async def send_request(self, lab_id, image):
-        """Asynchronous function to send the request."""
+        self.is_running = True
         try:
             _, img_encoded = cv2.imencode('.jpg', image)
             img_bytes = img_encoded.tobytes()
@@ -36,14 +30,10 @@ class Worker(QThread):
             data.add_field('image', img_bytes, filename='image.jpg', content_type='image/jpeg')
             data.add_field('lab_id', lab_id)
 
-            print(f"Sending request with lab_id: {lab_id}, Image size: {len(img_bytes)}")
-
             async with aiohttp.ClientSession() as session:
                 async with session.post('http://localhost:5000/upload_image', data=data) as response:
                     if response.status == 200:
                         response_data = await response.json()
-                        print(f"Response received: {response_data}")
-
                         if response_data.get('verified') and response_data.get('student_id'):
                             self.find_signal.emit(response_data['student_id'])
                         else:
@@ -52,22 +42,21 @@ class Worker(QThread):
                         self.error_signal.emit(f"Request failed with status code {response.status}")
         except Exception as e:
             self.error_signal.emit(f"Error occurred: {str(e)}")
+        finally:
+            self.is_running = False
 
     def run_task(self, lab_id, image):
-        """Start the asynchronous request."""
-        asyncio.run(self.send_request(lab_id, image))  # Runs the coroutine in the current thread
+        if not self.is_running:  
+            asyncio.run_coroutine_threadsafe(self.send_request(lab_id, image), self.loop)
 
     def run(self):
-        """Start the event loop in this thread."""
-        try:
-            self.loop.run_forever()  # Keep the loop running
-        except RuntimeError as e:
-            print(f"RuntimeError in Worker run: {e}")
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def stop(self):
-        """Stop the event loop."""
-        if self.loop.is_running():
-            self.loop.stop()
+        self.is_running = False
+        self.loop.call_soon_threadsafe(self.loop.stop)
+
 
 class CameraWindow(QMainWindow):
     def __init__(self, lab_id, lab_name):
@@ -79,10 +68,6 @@ class CameraWindow(QMainWindow):
         self.lab_name = lab_name
         self.is_popup_open = False
         self.current_message_box = None
-        self.initial_wait_done = False  # Track if the 3-second initial wait is over
-        self.processing_request = False  # Track if a request is being processed
-
-        self.db_connection = self.open_database_connection()
 
 
         # Initialize Picamera2
@@ -90,20 +75,16 @@ class CameraWindow(QMainWindow):
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
-        QTimer.singleShot(2000, self.enable_face_detection)
 
         # Load Haar Cascade for face detection
         self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
-
 
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
 
-        # Status label
-        self.status_label = QLabel("Initializing camera...", self.main_widget)
-        self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: blue;")
-        self.status_label.setAlignment(Qt.AlignCenter)
+        #self.welcome_label = QLabel("Please show your QR-code", self)
+        #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
 
         self.camera_label = QLabel(self)
         self.camera_label.setStyleSheet("border: 1px solid black;")
@@ -140,7 +121,7 @@ class CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(self.status_label)
+        #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
@@ -151,35 +132,16 @@ class CameraWindow(QMainWindow):
         self.timer.start(30)  # Update every 30ms
 
         # Initialize worker thread
-        self.worker = Worker(self.db_connection)
+        self.worker = Worker()
         self.worker.find_signal.connect(self.find_message)
         self.worker.error_signal.connect(self.show_error_message)
         self.worker.start()
 
-    def enable_face_detection(self):
-        self.initial_wait_done = True
-        self.status_label.setText("Please show your face")
-        
-    def open_database_connection(self):
-        try:
-            connection = pymysql.connect(**dbconfig)
-            print("Database connection established")
-            return connection
-        except Exception as e:
-            print(f"Error opening database connection: {e}")
-            return None
-
-    def close_database_connection(self):
-        if self.db_connection:
-            self.db_connection.close()
-            print("Database connection closed")
-            
     def timerEvent(self):
         frame = self.picam2.capture_array()
         if frame is not None:
             frame = cv2.flip(frame, 1)  # Mirror the frame
-            if self.initial_wait_done and not self.processing_request: 
-                frame = self.detect_and_process_face(frame)
+            frame = self.detect_and_process_face(frame)
             self.display_frame(frame)
 
     def display_frame(self, frame):
@@ -194,24 +156,20 @@ class CameraWindow(QMainWindow):
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
         if len(faces) > 0:
-            self.status_label.setText("Face detected. Identifying...") 
-
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            #self.worker.run_task(self.lab_id, frame)
-            QTimer.singleShot(2000, lambda: self.send_request_to_worker(frame))
-
-        return frame
-    
-    def send_request_to_worker(self, frame):
-        if not self.processing_request:  # Ensure only one request is processed at a time
-            self.processing_request = True
             self.worker.run_task(self.lab_id, frame)
 
-    def show_error_message(self, message):
-        #self.status_label.setText("Please show your face") 
+    
+            #if not self.task_queue.full():  # Avoid queue overflow
+            #    print("Adding task to queue")
+            #        self.task_queue.put((self.lab_id, frame))
+            #        print("Task added to queue")
 
+        return frame
+
+    def show_error_message(self, message):
         if not self.is_popup_open:
             self.is_popup_open = True
             self.current_message_box = QMessageBox(self)
@@ -219,23 +177,14 @@ class CameraWindow(QMainWindow):
             self.current_message_box.setWindowTitle("Error")
             self.current_message_box.setText(message)
             self.current_message_box.setStandardButtons(QMessageBox.Ok)
-            self.current_message_box.finished.connect(self.error_popup_wait)
+            self.current_message_box.finished.connect(self.reset_popup_status)
             self.current_message_box.show()
-            self.status_label.setText("Error occured!")
-            
-        self.status_label.setText("Please show your face")  
-
-    def error_popup_wait(self):
-        QTimer.singleShot(2000, self.reset_popup_status)
 
     def reset_popup_status(self):
         self.is_popup_open = False
         self.current_message_box = None
-        self.processing_request = False 
 
     def find_message(self, student_id):
-        self.status_label.setText("Student identified. Verifying...")
-
         if self.current_message_box:
             self.current_message_box.close()
 
@@ -270,9 +219,6 @@ class CameraWindow(QMainWindow):
             self.picam2.stop()
             self.picam2.close()
             self.picam2 = None
-
-        self.close_database_connection()
-
 
     def closeEvent(self, event):
         self.cleanup_resources()
