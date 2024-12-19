@@ -130,7 +130,7 @@ def upload_image():
                 students = cursor.fetchall()
 
                 for student_id, features_json in students:
-                    db_feature = np.array(json.loads(features_json), dtype=np.float32) 
+                    db_feature = np.array(json.loads(features_json)["embedding"], dtype=np.float32) 
                     distance = np.linalg.norm(input_feature - db_feature)
 
                     if distance < min_distance and distance < threshold:
