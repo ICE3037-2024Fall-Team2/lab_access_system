@@ -167,10 +167,11 @@ def upload_image():
                                     "UPDATE reservations SET checked = 1 WHERE reservation_id = %s",
                                     (reservation_id,)
                                 )
-                            else:
-                                return jsonify({"verified": False, "message": "Not in the reservation time slot"})
                                 connection.commit()
                                 return jsonify({"verified": True, "student_id": matched_student_id})
+                            else:
+                                return jsonify({"verified": False, "message": "Not in the reservation time slot"})
+                                
 
         return jsonify({"verified": False, "message": "No matching student or reservation found"})
 
