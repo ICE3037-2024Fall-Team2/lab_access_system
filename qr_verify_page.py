@@ -36,7 +36,10 @@ class QR_CameraWindow(QMainWindow):
         #self.camera_frame.setFixedSize(600, 560)
         #self.welcome_label = QLabel("Please show your QR-code", self)
         #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
-
+        self.status_label = QLabel("Initializing camera...", self.main_widget)
+        self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: blue;")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        
         self.camera_label = QLabel(self)
         self.camera_label.setGeometry(50, 50, 600, 560)
         self.camera_label.setStyleSheet("border: 1px solid black;")
@@ -76,17 +79,19 @@ class QR_CameraWindow(QMainWindow):
         self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
         self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         self.picam2.start()
+        self.status_label.setText("Please show your QR code") 
 
         # Timer for frame updates
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.scan_qr_code)
         self.timer.start(30)  # Update every 30ms
-
+        
         # Layout Setup
         self.show()
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.status_label)
         #main_layout.addWidget(self.camera_frame)
         #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
@@ -128,6 +133,7 @@ class QR_CameraWindow(QMainWindow):
             if len(points) == 4:
                 pts = [tuple(point) for point in points]
                 cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
+                self.status_label.setText("QR code detected. Identifying...") 
             #(x, y, w, h) = obj.rect
             #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
             qr_data = obj.data.decode('utf-8')
@@ -142,6 +148,7 @@ class QR_CameraWindow(QMainWindow):
                 break
             else:
                 QMessageBox.warning(self, "Error", "Not a valid QR-code.")
+                self.status_label.setText("Please show your QR code") 
         self.update_frame(frame)
 
     def verify_reservation(self, reservation_id):
@@ -156,6 +163,7 @@ class QR_CameraWindow(QMainWindow):
 
             if not reservation:
                 QMessageBox.warning(self, "Error", "No reservation found for this ID.")
+                self.status_label.setText("Please show your QR code") 
                 return
 
             # Extract reservation details
@@ -164,11 +172,13 @@ class QR_CameraWindow(QMainWindow):
             # Check if the reservation is verified
             if verified != 1:
                 QMessageBox.warning(self, "Unverified Reservation", "This reservation is not verified.")
+                self.status_label.setText("Please show your QR code") 
                 return
 
             # Check if the lab_id matches
             if lab_id_db != self.lab_id:
                 QMessageBox.warning(self, "Wrong Lab", "The reservation is for a different lab.")
+                self.status_label.setText("Please show your QR code") 
                 return
             # Check if the reservation date is valid
             current_date = datetime.date.today()
@@ -179,6 +189,7 @@ class QR_CameraWindow(QMainWindow):
                     QMessageBox.warning(self, "Past Reservation", "This reservation date has passed.")
                 else:
                     QMessageBox.warning(self, "Future Reservation", "This reservation is for a future date.")
+                self.status_label.setText("Please show your QR code") 
                 return
 
             # Check if the current time is within 5 minutes of the reservation time
@@ -207,7 +218,8 @@ class QR_CameraWindow(QMainWindow):
                 )
                 db_conn.commit()
             else:
-                QMessageBox.warning(self, "Not the Reservation Time", "You are not within the valid reservation time window.")
+                QMessageBox.warning(self, "Outside the reservation time window")
+                self.status_label.setText("Please show your QR code") 
             
         except Exception as e:
             QMessageBox.critical(self, "Database Error", f"An error occurred: {str(e)}")
