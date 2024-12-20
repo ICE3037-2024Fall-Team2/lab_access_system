@@ -27,7 +27,7 @@ class UnlockWindow(QMainWindow):
         self.title_label.setAlignment(Qt.AlignCenter)
 
         # Welcome Label
-        self.welcome_label = QLabel(f"Student: {self.user_id}, Welcome to {self.lab_name}!", self.main_widget)
+        self.welcome_label = QLabel(f"<br>Welcome to<br> {self.lab_name},<br><br>{self.user_id}!", self.main_widget)
         self.welcome_label.setFont(QFont("Arial", 40, QFont.Bold))
         self.welcome_label.setStyleSheet(" margin-bottom: 10px;")
         self.welcome_label.setAlignment(Qt.AlignCenter)
