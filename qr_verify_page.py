@@ -208,7 +208,7 @@ class QR_CameraWindow(QMainWindow):
                     self.picam2.close()
                     self.picam2 = None
                 self.timer.stop()
-                self.unlock_window = UnlockWindow(self.lab_id, self.lab_id, user_id)
+                self.unlock_window = UnlockWindow(self.lab_id, self.lab_name, user_id)
                 self.unlock_window.show()
                 self.close()
                 
@@ -218,7 +218,7 @@ class QR_CameraWindow(QMainWindow):
                 )
                 db_conn.commit()
             else:
-                QMessageBox.warning(self, "Outside the reservation time window")
+                QMessageBox.warning(self, "Not Now","Outside the reservation time window")
                 self.status_label.setText("Please show your QR code") 
             
         except Exception as e:
