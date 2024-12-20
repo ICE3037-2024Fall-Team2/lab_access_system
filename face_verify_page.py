@@ -70,19 +70,16 @@ class CameraWindow(QMainWindow):
         self.current_message_box = None
 
 
-        # Initialize Picamera2
-        self.picam2 = Picamera2()
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
-        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
-        self.picam2.start()
-
         # Load Haar Cascade for face detection
         self.face_cascade = cv2.CascadeClassifier('/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml')
 
         # Set up the main UI
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
-
+        
+        self.status_label = QLabel("Initializing camera...", self.main_widget)
+        self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: blue;")
+        self.status_label.setAlignment(Qt.AlignCenter)
         #self.welcome_label = QLabel("Please show your QR-code", self)
         #self.welcome_label.setStyleSheet("font-size: 45px; font-weight: bold;")
 
@@ -121,10 +118,19 @@ class CameraWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_widget)
         main_layout.setSpacing(10)
         main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.status_label)
         #main_layout.addWidget(self.welcome_label)
         main_layout.addWidget(self.camera_label)
         main_layout.addWidget(self.back_button)
         main_layout.addWidget(self.bt_frame)
+
+
+        # Initialize Picamera2
+        self.picam2 = Picamera2()
+        self.picam2.configure(self.picam2.create_preview_configuration(main={"format": "RGB888","size": (640, 480)}))
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.picam2.start()
+        self.status_label.setText("Please show your face") 
 
         # Timer to capture frames and process in main thread
         self.timer = QTimer(self)
@@ -154,14 +160,15 @@ class CameraWindow(QMainWindow):
     def detect_and_process_face(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
+        
         if len(faces) > 0:
+            self.status_label.setText("Face detected. Identifying...") 
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-            self.worker.run_task(self.lab_id, frame)
-
-    
+            self.worker.run_task(self.lab_id, frame) 
+        else:
+            self.status_label.setText("Please show your face") 
             #if not self.task_queue.full():  # Avoid queue overflow
             #    print("Adding task to queue")
             #        self.task_queue.put((self.lab_id, frame))
@@ -177,9 +184,15 @@ class CameraWindow(QMainWindow):
             self.current_message_box.setWindowTitle("Error")
             self.current_message_box.setText(message)
             self.current_message_box.setStandardButtons(QMessageBox.Ok)
-            self.current_message_box.finished.connect(self.reset_popup_status)
+            self.status_label.setText("Failed...") 
+            self.current_message_box.finished.connect(self.error_popp_wait)
             self.current_message_box.show()
-
+            #QTimer.singleShot(3000, set_popup_status_true)
+        self.status_label.setText("Please show your face") 
+            
+    def error_popp_wait(self):
+        QTimer.singleShot(3000, self.reset_popup_status)
+        
     def reset_popup_status(self):
         self.is_popup_open = False
         self.current_message_box = None
