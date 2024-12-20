@@ -32,7 +32,7 @@ bucket_name = S3_BUCKET_NAME
 db_config = DB_CONFIG
 
 # Matching threshold
-threshold = 0.68
+threshold = 0.8
 
 
 def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
@@ -50,7 +50,6 @@ def generate_presigned_url(s3_client, bucket_name, object_key, expiration=3600):
 
 def calculate_feature(image):
     try:
-        # 提取 embedding 数组
         embedding = DeepFace.represent(image, model_name=model_name, enforce_detection=False)
         if isinstance(embedding, list) and len(embedding) > 0:
             return np.array(embedding[0]["embedding"], dtype=np.float32) 
@@ -88,7 +87,6 @@ def update_missing_features():
     try:
         with pymysql.connect(**db_config) as connection:
             with connection.cursor() as cursor:
-                # 获取未计算 features 的记录
                 cursor.execute("SELECT id, photo_path FROM user_img WHERE features IS NULL AND photo_path IS NOT NULL")
                 missing_features = cursor.fetchall()
 
@@ -140,8 +138,10 @@ def upload_image():
                 for student_id, features_json in students:
                     # Load features directly from JSON array
                     db_feature = np.array(json.loads(features_json), dtype=np.float32)
+                    input_feature = input_feature / np.linalg.norm(input_feature)
+                    db_feature = db_feature / np.linalg.norm(db_feature)
                     distance = np.linalg.norm(input_feature - db_feature)
-
+                    print(distance)
                     if distance < min_distance and distance < threshold:
                         min_distance = distance
                         matched_student_id = student_id
@@ -152,7 +152,7 @@ def upload_image():
                     WHERE lab_id = %s AND date = %s AND verified = 1
                 """, (lab_id, today_date))
                 reservations = cursor.fetchall()
-
+                print(reservations)
                 if matched_student_id:
                     print(matched_student_id)
                     for user_id, reservation_id, date, time in reservations:
@@ -171,9 +171,10 @@ def upload_image():
                                 return jsonify({"verified": True, "student_id": matched_student_id})
                             else:
                                 return jsonify({"verified": False, "message": "Not in the reservation time slot"})
-                                
+                else:
+                    return jsonify({"verified": False, "message": "No matching student"})              
 
-        return jsonify({"verified": False, "message": "No matching student or reservation found"})
+        return jsonify({"verified": False, "message": "No upcoming reservation found"})
 
     except ValueError as e:
         app.logger.error(f"ValueError: {e}")
