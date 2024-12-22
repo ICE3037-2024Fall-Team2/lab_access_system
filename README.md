@@ -45,9 +45,11 @@ Initially developed as a web application, the project faced some limitations tha
   - An alternative method for students to unlock the lab using a generated QR code.
 - **Reservation Validation**:
   - Verifies reservations in real-time by communicating with the Lab Reservation System's database.
+- **ScreenShots**:<br><img src="readme_rsc/accesspages.png" alt="Access Pages" width="500">
   
 ### Admin Features
 - **Lab Setting**: Allows setting the device to any of the existing labs.
+- **ScreenShots**:<br><img src="readme_rsc/settingpages.png" alt="Setting Pages" width="350">
 
 ---
 
