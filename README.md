@@ -7,9 +7,10 @@ The **Lab Access System** is a Raspberry Pi-based solution for secure lab entry.
 
 Initially developed as a web application, the project faced some limitations that impacted overall performance and features like QR code scanning. To address these challenges and ensure seamless integration of features, the project was transitioned to a Python-based application.
 
-## Related Repositories
-- [Lab Reservation System - Website for Reservation](https://github.com/ICE3037-2024Fall-Team2/lab_reservation_system)  
+## Related
+- [[GitHub] Lab Reservation System - Website for Reservation](https://github.com/ICE3037-2024Fall-Team2/lab_reservation_system)  
     *(This repository contains the software we developed for managing lab reservations, including booking, scheduling, and database management, which is another part of our project.)*
+- [[YouTube] Project Final Demo Video](https://youtu.be/3BNqeNVnhwg)
 ---
 
 ## Full Project Architecture
