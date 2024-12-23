@@ -10,8 +10,9 @@ Initially developed as a web application, the project faced some limitations tha
 ## Related
 - [[GitHub] Lab Reservation System - Website for Reservation](https://github.com/ICE3037-2024Fall-Team2/lab_reservation_system)  
     *(This repository contains the software we developed for managing lab reservations, including booking, scheduling, and database management, which is another part of our project.)*
-- [[YouTube] Full Project Final Demo Video](https://youtu.be/3BNqeNVnhwg)
-- [[YouTube] Raspberry Pi System Final Demo Video](https://www.youtube.com/watch?v=zG17rv9CppY)
+- [[YouTube] Full Project Final Demo Video](https://youtu.be/3BNqeNVnhwg)  
+    *(This video showcases the final demonstration of our full project)*
+- [[YouTube] Raspberry Pi System Final Demo Video](https://www.youtube.com/watch?v=zG17rv9CppY)  
     *(This video contains a more detailed showcase of the software deployed on our Raspberry Pi system)*
 ---
 
@@ -53,6 +54,10 @@ Initially developed as a web application, the project faced some limitations tha
 - **Lab Setting**: Allows setting the device to any of the existing labs.
 - **ScreenShots**:<br><img src="readme_rsc/settingpages.png" alt="Setting Pages" width="350">
 
+## Frontend Flowchart
+Below is a flowchart that illustrates the sequence of interactions and transitions between different user interfaces or screens in our application.
+
+![Frontend Flowchart](readme_rsc/rep_Frontend%20LAS.png)
 ---
 
 ## Challenges and Solutions
